@@ -29,3 +29,5 @@ These checks verify the deployment and application behavior; they do not establi
 
 - Real inference on the deployed GitHub Pages website repeatedly detected an Old object in explicitly labeled dataset-sample camera mode (50.3% in the browser). Stop cleared the overlay, and a captured-frame scan also detected one Old object. No physical webcam was accessed for this test.
 - Returning from captured-frame detection to live mode is covered by a regression test after an observer timing issue was found and fixed during public testing.
+
+- The final public version also passed captured-frame detection followed by resuming multiple automatic live frames. The reported screenshot crop returned zero objects in the deployed browser detector as well as native YOLO.
