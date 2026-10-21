@@ -57,6 +57,9 @@ test('New captures ignore old detections; capture inference does not require a r
     assert.match(t.nodes.growthCameraStatus.textContent,/Captured frame ready/);
     t.nodes.detectCapturedGrowth.click();await until(()=>t.nodes.growthCameraStatus.textContent.includes('Captured frame · YOLO'));
     assert.equal(t.nodes.cameraStage.children[0].children.length,3);
+    // The observer fires after hiding the captured preview to resume the existing stream.
+    t.connect();const atResume=t.result.calls;t.nodes.startLiveGrowth.click();t.observer();
+    await until(()=>t.result.calls>=atResume+2&&t.nodes.growthCameraStatus.textContent.includes('Live YOLO · frame'));
   }finally{t.cleanup();}
 });
 test('Recording, hidden tabs, and camera stop terminate live scanning',async()=>{

@@ -23,6 +23,9 @@ These checks verify the deployment and application behavior; they do not establi
 - The original camera detected a captured still only. Live mode now repeatedly scans new frames with one inference request in flight, explicit start/stop, and view/generation checks that reject late results.
 - Controller regression tests cover serial scheduling, blank-frame box removal, stopping during inference, capture changes, capture scans without a running camera, recording, hidden tabs, and camera shutdown. These tests use DOM/API fixtures; model parity tests use the trained weights.
 - Five validation photos were compared with the original checkpoint. With the previous fixed square browser input, one photo returned zero objects while the native rectangular pipeline detected Old at 43.96%. Dynamic rectangular ONNX inference recovers its 43.96% raw score without changing the 25% confidence threshold.
-- Export numerical parity was checked on five tensor shapes during this correction. The reproducible export script additionally covers the landscape 320×640 shape.
+- The reproducible export passed numerical parity on all six square/rectangular input shapes, including landscape 320×640.
 - A crop of the user-supplied screen capture returned no detections in both native YOLO (rectangular and square) and the previous ONNX export. Its strongest square-input score was approximately 0.8%. Screenshot pixels are not the original captured image; this is diagnostic evidence, not a ground-truth evaluation.
 - Model weights and class mappings are unchanged. These corrections do not establish new model accuracy on field photographs or re-filmed screens.
+
+- Real inference on the deployed GitHub Pages website repeatedly detected an Old object in explicitly labeled dataset-sample camera mode (50.3% in the browser). Stop cleared the overlay, and a captured-frame scan also detected one Old object. No physical webcam was accessed for this test.
+- Returning from captured-frame detection to live mode is covered by a regression test after an observer timing issue was found and fixed during public testing.

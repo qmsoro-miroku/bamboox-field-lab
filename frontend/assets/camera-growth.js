@@ -16,7 +16,7 @@
   const cameraOn=()=>!!video.srcObject?.getVideoTracks().some(t=>t.readyState==='live');
   const liveReady=()=>cameraOn()&&!video.hidden&&video.readyState>=2&&video.videoWidth>0;
   function message(text,kind=''){status.textContent=text;status.dataset.kind=kind;}
-  function clearOverlay(){overlay.replaceChildren();overlay.style.display='none';}
+  function clearOverlay(){overlay.replaceChildren();overlay.style.display='none';delete overlay.dataset.mode;}
   function controls(){
     start.disabled=!cameraOn()||busy||recording||active||pending||document.hidden;
     stop.disabled=!active;
