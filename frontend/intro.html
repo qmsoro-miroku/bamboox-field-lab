@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Begin Expedition{% endblock %}
+{% block body_class %}fl-home-page{% endblock %}
+{% block main_navigation %}{% endblock %}
+{% block page_header %}{% endblock %}
+{% block content %}
+<div class="fl-welcome">
+  <section class="fl-intro-main" aria-labelledby="welcomeTitle">
+    <div class="fl-intro-content">
+      <div class="fl-eyebrow"><span class="fl-diamond" aria-hidden="true"></span>FIELD EXPEDITION / VERSION 3.0</div>
+      <h1 id="welcomeTitle">Every discovery <span>starts with a scan.</span></h1>
+      <p class="fl-intro-description">Your local bamboo field workspace. Identify species, explore growth stages, and record where every sample was found.</p>
+      <div class="fl-intro-actions">
+        <a href="/app/hub" class="fl-button fl-button-primary">Enter Field Lab <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="fl-intro-facts" aria-label="Field workflow">
+        <div><strong>01</strong><span>EXPLORE</span></div>
+        <div><strong>02</strong><span>SCAN</span></div>
+        <div><strong>03</strong><span>RECORD</span></div>
+      </div>
+    </div>
+      <div class="fl-scene" aria-hidden="true">
+        <div class="fl-scene-label fl-scene-label-top">
+          VISUAL FIELD // BAMBOO
+        </div>
+
+        <svg viewBox="0 0 520 500"
+             xmlns="http://www.w3.org/2000/svg"
+             role="presentation">
+          <defs>
+            <linearGradient id="bambooStem" x1="0" x2="1">
+              <stop offset="0%" stop-color="#375D33"/>
+              <stop offset="40%" stop-color="#A1CC67"/>
+              <stop offset="75%" stop-color="#6D9845"/>
+              <stop offset="100%" stop-color="#264F30"/>
+            </linearGradient>
+
+            <linearGradient id="bambooLeaf" x1="0" x2="1">
+              <stop offset="0%" stop-color="#C9ED76"/>
+              <stop offset="100%" stop-color="#43834C"/>
+            </linearGradient>
+          </defs>
+
+          <circle cx="270" cy="246" r="178"
+                  fill="#C9ED76" opacity=".035"/>
+
+          <circle cx="270" cy="246" r="148"
+                  fill="none" stroke="#9EC96C"
+                  stroke-width="1.5" opacity=".35"/>
+
+          <circle cx="270" cy="246" r="104"
+                  fill="none" stroke="#9EC96C"
+                  stroke-width="1" stroke-dasharray="5 10"
+                  opacity=".35"/>
+
+          <path d="M0 246H520M270 0V500"
+                stroke="#A6CD7B" stroke-width="1"
+                opacity=".18"/>
+
+          <g transform="rotate(-7 260 250)">
+            <rect x="196" y="55" width="74" height="405"
+                  rx="18" fill="url(#bambooStem)"/>
+
+            <rect x="201" y="142" width="64" height="10"
+                  rx="5" fill="#254E30"/>
+            <rect x="201" y="151" width="64" height="4"
+                  rx="2" fill="#E1F0A2" opacity=".7"/>
+
+            <rect x="201" y="250" width="64" height="10"
+                  rx="5" fill="#254E30"/>
+            <rect x="201" y="259" width="64" height="4"
+                  rx="2" fill="#E1F0A2" opacity=".7"/>
+
+            <rect x="201" y="352" width="64" height="10"
+                  rx="5" fill="#254E30"/>
+
+            <path d="M206 66V448"
+                  stroke="#E8F7B1" stroke-width="5"
+                  opacity=".27"/>
+
+            <path d="M270 151Q335 115 386 73"
+                  stroke="#89BD64" stroke-width="7"
+                  fill="none" stroke-linecap="round"/>
+
+            <path d="M270 258Q330 272 386 342"
+                  stroke="#89BD64" stroke-width="6"
+                  fill="none" stroke-linecap="round"/>
+          </g>
+
+          <g fill="url(#bambooLeaf)">
+            <path d="M344 127Q395 50 476 42Q449 119 344 127Z"/>
+            <path d="M337 139Q398 98 474 118Q420 173 337 139Z"/>
+            <path d="M373 93Q370 25 407 5Q417 60 373 93Z"/>
+            <path d="M340 304Q429 273 488 305Q414 339 340 304Z"/>
+            <path d="M356 321Q416 340 437 414Q364 383 356 321Z"/>
+            <path d="M340 296Q392 239 447 241Q410 295 340 296Z"/>
+            <path d="M177 180Q120 97 42 102Q98 175 177 180Z"/>
+            <path d="M175 190Q110 169 38 214Q113 232 175 190Z"/>
+            <path d="M166 343Q98 288 29 315Q91 356 166 343Z"/>
+          </g>
+
+          <g stroke="#CBEC87" fill="none" stroke-width="3">
+            <path d="M135 120h35v-20"/>
+            <path d="M372 183h34v34"/>
+            <path d="M118 381h29v-25"/>
+            <path d="M358 390h30v-24"/>
+          </g>
+
+          <g fill="#D6F59C">
+            <circle cx="170" cy="100" r="4"/>
+            <circle cx="406" cy="217" r="4"/>
+            <circle cx="147" cy="356" r="4"/>
+            <circle cx="388" cy="366" r="4"/>
+          </g>
+        </svg>
+
+        <div class="fl-scene-label fl-scene-label-bottom">
+          SPECIMEN RECONNAISSANCE / LOCAL AI
+        </div>
+      </div>
+
+  </section>
+  <footer class="fl-intro-footer"><span>BambooX Field Lab · Research prototype</span><span>Local AI / Local records</span></footer>
+</div>
+{% endblock %}

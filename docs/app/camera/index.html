@@ -1,0 +1,1351 @@
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b211a">
+
+  <title>
+    BambooX Field Lab | Live Camera
+  </title>
+
+  <script>
+    try {
+      const saved = localStorage.getItem("bamboox-theme");
+      const dark = saved === "dark" ||
+        (saved !== "light" &&
+         matchMedia("(prefers-color-scheme: dark)").matches);
+
+      document.documentElement.dataset.theme =
+        dark ? "dark" : "light";
+    } catch (_) {
+      document.documentElement.dataset.theme = "light";
+    }
+  </script>
+
+  <link rel="stylesheet" href="/bamboox-field-lab/assets/style.css">
+  <link rel="stylesheet" href="/bamboox-field-lab/assets/fieldlab.css">
+  <link rel="stylesheet" href="/bamboox-field-lab/assets/fieldlab-upgrade.css?v=20261021b">
+
+  <script>window.BAMBOOX_BASE="/bamboox-field-lab";</script>
+<script src="/bamboox-field-lab/assets/ort/ort.wasm.min.js"></script>
+<script src="/bamboox-field-lab/assets/web-api.js"></script>
+<script defer src="/bamboox-field-lab/assets/shell.js"></script>
+  
+<link rel="icon" type="image/svg+xml" href="/bamboox-field-lab/assets/favicon.svg">
+</head>
+
+<body class="">
+  <a class="skip-link" href="#mainContent">
+    Skip to main content
+  </a>
+
+  <svg class="svg-sprite"
+       xmlns="http://www.w3.org/2000/svg"
+       aria-hidden="true"
+       focusable="false">
+
+    <symbol id="i-grid" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </symbol>
+
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="m3 10 9-7 9 7v10H3Z"/>
+      <path d="M9 21v-8h6v8"/>
+    </symbol>
+
+    <symbol id="i-compass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="m16 8-3 5-5 3 3-5Z"/>
+    </symbol>
+
+    <symbol id="i-camera" viewBox="0 0 24 24">
+      <path d="M4 7h4l2-3h4l2 3h4v13H4Z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </symbol>
+
+    <symbol id="i-scan" viewBox="0 0 24 24">
+      <path d="M7 3H5a2 2 0 0 0-2 2v2m14-4h2a2 2 0 0 1 2 2v2M3 17v2a2 2 0 0 0 2 2h2m14-4v2a2 2 0 0 1-2 2h-2M7 12h10m-5-5v10"/>
+    </symbol>
+
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <rect x="5" y="3" width="14" height="18" rx="2"/>
+      <path d="M9 8h6M9 12h6M9 16h4"/>
+    </symbol>
+
+    <symbol id="i-tag" viewBox="0 0 24 24">
+      <path d="M20 13 12 21 3 12V4h8l9 9Z"/>
+      <circle cx="7.5" cy="8.5" r="1"/>
+    </symbol>
+
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </symbol>
+
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14"/>
+    </symbol>
+
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M20 16A8 8 0 0 1 8 4 8.5 8.5 0 1 0 20 16Z"/>
+    </symbol>
+
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24">
+      <path d="M20 4C11 3 5 8 5 15a5 5 0 0 0 5 5c7 0 11-7 10-16ZM5 20c3-5 6-8 11-11"/>
+    </symbol>
+  </svg>
+
+  <div class="app-shell fl-app-shell">
+    <div class="main-area fl-main-area">
+
+      <header class="fl-topbar" aria-label="Field Lab navigation">
+
+        <div class="fl-topbar-upper">
+
+          <a class="fl-topbrand"
+             href="/bamboox-field-lab/"
+             aria-label="BambooX Field Lab Home">
+            <span class="fl-topbrand-mark">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-leaf"/>
+              </svg>
+            </span>
+            <span>
+              <strong>Bamboo<span>X</span></strong>
+              <small>FIELD LAB / EXPEDITION</small>
+            </span>
+          </a>
+
+          <div class="fl-topbar-tools">
+            
+
+            <span class="fl-current-system">
+              <span class="fl-status-dot" aria-hidden="true"></span>
+              SPECIES + GROWTH · BROWSER AI
+            </span>
+
+            <button id="themeToggle"
+                    class="fl-theme-button"
+                    type="button"
+                    aria-label="Toggle dark mode"
+                    aria-pressed="false">
+
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-moon"/>
+              </svg>
+
+              <span id="themeLabel">Dark mode</span>
+            </button>
+          </div>
+        </div>
+
+        
+        <nav class="fl-topnav" aria-label="Main navigation">
+
+          <a href="/bamboox-field-lab/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-home"/>
+            </svg>
+            Home
+          </a>
+
+          <a href="/bamboox-field-lab/app/hub/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-compass"/>
+            </svg>
+            Mission Hub
+          </a>
+
+          <a href="/bamboox-field-lab/app/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-grid"/>
+            </svg>
+            Dashboard
+          </a>
+
+          <a href="/bamboox-field-lab/app/inspection/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-scan"/>
+            </svg>
+            Image Scanner
+          </a>
+
+          <a href="/bamboox-field-lab/app/camera/"
+             class="fl-navitem is-active"
+             aria-current="page">
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-camera"/>
+            </svg>
+            Live Camera
+          </a>
+
+          <a href="/bamboox-field-lab/app/records/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-list"/>
+            </svg>
+            Field Journal
+          </a>
+
+          <a href="/bamboox-field-lab/app/labeling/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-tag"/>
+            </svg>
+            Growth Dataset
+          </a>
+
+          <a href="/bamboox-field-lab/app/settings/"
+             class="fl-navitem"
+             >
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-settings"/>
+            </svg>
+            Settings
+          </a>
+
+        </nav>
+        
+      </header>
+
+      <main class="page-content"
+            id="mainContent"
+            tabindex="-1">
+
+        
+        <header class="page-header">
+
+          <div>
+            <div class="eyebrow">
+              BAMBOOX /
+              CAMERA STATION
+            </div>
+
+            <h1>
+              Live Camera
+            </h1>
+
+            <p class="page-subtitle">
+              
+Capture a field photo, analyze bamboo species, and save it locally.
+
+            </p>
+          </div>
+
+          <div class="header-actions">
+            
+<a href="/bamboox-field-lab/app/hub/" class="secondary">← Mission Hub</a>
+
+          </div>
+
+        </header>
+
+        
+        
+
+<div class="fl-camera-page">
+
+  <section class="fl-camera-banner">
+    <span class="fl-kicker">
+      FIELD STATION / CAMERA MISSION
+    </span>
+
+    <h2>Observe. Capture. Analyze.</h2>
+
+    <p>
+      Capture bamboo images using your webcam.
+      Analyze captured frames with MobileNetV3-Small species
+      recognition or YOLOv8n growth-stage object detection.
+    </p>
+
+    <span class="fl-phase-tag">
+      BROWSER CAMERA · TWO AI MODES
+    </span>
+  </section>
+
+  <section class="fl-camera-grid">
+
+    <div>
+
+      <div class="fl-camera-stage"
+           id="cameraStage"
+           aria-label="Camera view">
+
+        <div class="fl-camera-center"
+             id="cameraPlaceholder">
+
+          <svg viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="1.6"
+               aria-hidden="true">
+            <path d="M4 7h4l2-3h4l2 3h4v13H4Z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+
+          <h3>Camera is off</h3>
+          <p>Choose Start Camera and grant permission.</p>
+        </div>
+
+        <video
+          id="cameraVideo"
+          autoplay
+          muted
+          playsinline
+          hidden>
+        </video>
+
+        <img
+          id="capturePreview"
+          class="fl-capture-preview"
+          alt="Captured bamboo frame"
+          hidden>
+
+        <div class="fl-camera-corner fl-corner-tl"></div>
+        <div class="fl-camera-corner fl-corner-tr"></div>
+        <div class="fl-camera-corner fl-corner-bl"></div>
+        <div class="fl-camera-corner fl-corner-br"></div>
+
+        <span class="fl-camera-watermark">
+          BAMBOOX / LIVE CAMERA
+        </span>
+      </div>
+
+      <div class="fl-camera-controls">
+
+        <button type="button"
+                id="startCamera"
+                class="btn">
+          Start Camera
+        </button>
+
+        <button type="button"
+                id="stopCamera"
+                class="secondary"
+                disabled>
+          Stop Camera
+        </button>
+
+        <button type="button"
+                id="captureFrame"
+                class="btn"
+                disabled>
+          Capture Frame
+        </button>
+
+        <button type="button"
+                id="recordClip"
+                class="secondary"
+                disabled>
+          Record Clip
+        </button>
+
+        <button type="button"
+                id="stopClip"
+                class="secondary"
+                disabled>
+          Stop Recording
+        </button>
+
+      </div>
+
+      <p class="fl-camera-notice">
+        Both AI modes are available: species recognition and
+        dataset-defined growth-stage object detection.
+        These predictions do not certify biological age,
+        bamboo quality, or structural safety.
+        Growth-stage detections are not yet saved to browser journal.
+      </p>
+
+      <p id="cameraStatus"
+         class="fl-camera-status"
+         role="status"
+         aria-live="polite">
+        Camera not started.
+      </p>
+
+      <canvas id="cameraCanvas" hidden></canvas>
+    </div>
+
+    <aside class="fl-camera-info">
+      <span class="fl-kicker">MISSION STEPS</span>
+      <h3>From camera to record</h3>
+
+      <div class="fl-camera-step">
+        <span>01</span>
+        <div>
+          <strong>Start camera</strong>
+          <p>Allow this browser to use the webcam.</p>
+        </div>
+      </div>
+
+      <div class="fl-camera-step">
+        <span>02</span>
+        <div>
+          <strong>Capture frame</strong>
+          <p>Photograph the bamboo sample.</p>
+        </div>
+      </div>
+
+      <div class="fl-camera-step">
+        <span>03</span>
+        <div>
+          <strong>Analyze species</strong>
+          <p>
+            Validate image and run MobileNetV3-Small in this browser.
+          </p>
+        </div>
+      </div>
+
+      <div class="fl-camera-step">
+        <span>04</span>
+        <div>
+          <strong>Save to Field Journal</strong>
+          <p>
+            Store the photo and prediction in browser journal.
+          </p>
+        </div>
+      </div>
+
+      <a href="/bamboox-field-lab/app/inspection/"
+         class="fl-button fl-button-outline fl-camera-link">
+        Prefer uploading a photo? →
+      </a>
+    </aside>
+
+  </section>
+
+  <section class="fl-camera-form"
+           aria-label="Captured sample information">
+
+    <span class="fl-kicker" style="color:var(--green)">
+      SAMPLE RECORD
+    </span>
+
+    <h2>Capture details</h2>
+
+    <div class="fl-camera-fields">
+
+      <div>
+        <label for="cameraSampleId">Sample ID *</label>
+        <input
+          id="cameraSampleId"
+          maxlength="80"
+          placeholder="Loading next ID..."
+          required>
+      </div>
+
+      <div>
+        <label for="cameraOrigin">Origin / location</label>
+        <input
+          id="cameraOrigin"
+          maxlength="250"
+          placeholder="e.g. Quezon City">
+      </div>
+
+      <div class="fl-full">
+        <label for="cameraNotes">Inspector notes</label>
+        <textarea
+          id="cameraNotes"
+          maxlength="2000"
+          placeholder="Field observations (optional)"></textarea>
+      </div>
+
+    </div>
+
+    <div class="fl-camera-actions">
+
+      <button type="button"
+              id="analyzeFrame"
+              class="btn"
+              disabled>
+        Validate &amp; Predict Species
+      </button>
+
+      <button type="button"
+              id="saveFrame"
+              class="btn"
+              disabled>
+        Save Inspection
+      </button>
+
+      <a href="/bamboox-field-lab/app/records/"
+         class="fl-button fl-button-outline"
+         style="color:var(--text);border-color:var(--border)">
+        Field Journal →
+      </a>
+
+    </div>
+
+    <div id="cameraResult"
+         class="fl-camera-result"
+         hidden>
+
+      <span class="fl-camera-notice">
+        MODEL PREDICTION · SPECIES
+      </span>
+
+      <p><strong id="cameraSpecies">—</strong></p>
+      <p id="cameraConfidence">—</p>
+      <p id="cameraInference">—</p>
+
+      <p class="fl-camera-warning"
+         id="cameraLowWarning"
+         hidden>
+        Low-confidence species prediction.
+        Manual verification recommended.
+      </p>
+
+      <p id="cameraSaved"
+         class="fl-camera-status"
+         hidden></p>
+
+    </div>
+
+    <p class="fl-camera-notice">
+      Use <strong>Detect Growth Stage</strong> on a captured frame
+      to preview Young / Matured / Old detections.
+      Growth detections remain separate from saved species inspections.
+    </p>
+
+  </section>
+</div>
+
+
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toastRegion"
+       class="toast-region"
+       role="status"
+       aria-live="polite"></div>
+
+  
+
+<script>
+"use strict";
+
+(() => {
+  const $ = id => document.getElementById(id);
+
+  const video = $("cameraVideo");
+  const preview = $("capturePreview");
+  const placeholder = $("cameraPlaceholder");
+  const canvas = $("cameraCanvas");
+
+  let stream = null;
+  let captured = null;
+  let imageURL = null;
+  let prediction = null;
+  let saved = false;
+  let busy = false;
+
+  let recorder = null;
+  let clipChunks = [];
+
+  function notify(message, kind = "") {
+    $("cameraStatus").textContent = message;
+    $("cameraStatus").dataset.kind = kind;
+
+    if (kind === "error") {
+      window.bambooxToast?.(message, "error");
+    }
+  }
+
+  function refresh() {
+    const cameraOn = !!stream;
+    const recording =
+      !!recorder && recorder.state === "recording";
+
+    $("startCamera").disabled = cameraOn || busy;
+
+    $("stopCamera").disabled =
+      !cameraOn || busy || recording;
+
+    $("captureFrame").disabled =
+      !cameraOn || busy || recording;
+
+    $("recordClip").disabled =
+      !cameraOn || busy || recording || !window.MediaRecorder;
+
+    $("stopClip").disabled = !recording;
+
+    $("analyzeFrame").disabled =
+      !captured || busy || saved;
+
+    $("saveFrame").disabled =
+      !prediction || busy || saved;
+  }
+
+  function clearPreviousCapture() {
+    if (imageURL) {
+      URL.revokeObjectURL(imageURL);
+    }
+
+    imageURL = null;
+    captured = null;
+    prediction = null;
+    saved = false;
+
+    preview.hidden = true;
+    preview.removeAttribute("src");
+
+    $("cameraResult").hidden = true;
+    $("cameraSaved").hidden = true;
+  }
+
+  function formData() {
+    const data = new FormData();
+
+    data.append("file", captured);
+
+    data.append(
+      "sample_id",
+      $("cameraSampleId").value.trim()
+    );
+
+    data.append("species", "");
+
+    data.append(
+      "origin",
+      $("cameraOrigin").value.trim()
+    );
+
+    data.append(
+      "notes",
+      $("cameraNotes").value.trim()
+    );
+
+    return data;
+  }
+
+  function validateInput() {
+    if (!captured) {
+      throw new Error("Capture a frame first.");
+    }
+
+    const id = $("cameraSampleId").value.trim();
+
+    if (!id || id.length > 80) {
+      throw new Error(
+        "Enter a Sample ID (1–80 characters)."
+      );
+    }
+
+    if ($("cameraNotes").value.length > 2000) {
+      throw new Error("Notes are too long.");
+    }
+  }
+
+  async function request(url, body) {
+    const response = await fetch(url, {
+      method: "POST",
+      body
+    });
+
+    const data = await response.json()
+      .catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        typeof data.detail === "string"
+          ? data.detail
+          : `HTTP ${response.status}`
+      );
+    }
+
+    return data;
+  }
+
+  async function suggestId() {
+    try {
+      const response = await fetch(
+        "/api/inspections/next-id",
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      if (!$("cameraSampleId").value.trim()) {
+        $("cameraSampleId").value =
+          data.suggested_id || "";
+      }
+    } catch (_) {
+      $("cameraSampleId").placeholder =
+        "Enter Sample ID";
+    }
+  }
+
+  // =====================================================
+  // START CAMERA
+  // =====================================================
+
+  $("startCamera").addEventListener("click", async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      notify(
+        "Camera access requires HTTPS and a supported browser. You can also upload an image.",
+        "error"
+      );
+      return;
+    }
+
+    busy = true;
+    refresh();
+    notify("Requesting camera access...");
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      video.srcObject = stream;
+
+      await video.play();
+
+      clearPreviousCapture();
+
+      placeholder.hidden = true;
+      video.hidden = false;
+
+      notify(
+        "Live camera ready. Capture a bamboo frame.",
+        "success"
+      );
+
+    } catch (error) {
+      stream?.getTracks().forEach(track => track.stop());
+      stream = null;
+
+      notify(
+        "Could not access camera: " + error.message,
+        "error"
+      );
+
+    } finally {
+      busy = false;
+      refresh();
+    }
+  });
+
+  // =====================================================
+  // STOP CAMERA
+  // =====================================================
+
+  $("stopCamera").addEventListener("click", () => {
+    stream?.getTracks().forEach(track => track.stop());
+
+    stream = null;
+
+    video.srcObject = null;
+    video.hidden = true;
+
+    if (!captured) {
+      placeholder.hidden = false;
+    }
+
+    notify(
+      "Camera stopped. Captured photo is retained, if any."
+    );
+
+    refresh();
+  });
+
+  // =====================================================
+  // CAPTURE IMAGE
+  // =====================================================
+
+  $("captureFrame").addEventListener("click", async () => {
+    if (!stream || !video.videoWidth || !video.videoHeight) {
+      notify(
+        "Camera video is not ready yet.",
+        "error"
+      );
+      return;
+    }
+
+    busy = true;
+    refresh();
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      canvas.getContext("2d").drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          b => b
+            ? resolve(b)
+            : reject(new Error("Image capture failed.")),
+          "image/jpeg",
+          .9
+        );
+      });
+
+      clearPreviousCapture();
+
+      captured = new File(
+        [blob],
+        `bamboox_camera_${Date.now()}.jpg`,
+        { type: "image/jpeg" }
+      );
+
+      imageURL = URL.createObjectURL(captured);
+
+      preview.src = imageURL;
+      preview.hidden = false;
+
+      placeholder.hidden = true;
+      video.hidden = true;
+
+      notify(
+        "Frame captured. Click Validate & Predict Species.",
+        "success"
+      );
+
+    } catch (error) {
+      notify(error.message, "error");
+
+    } finally {
+      busy = false;
+      refresh();
+    }
+  });
+
+  // =====================================================
+  // VALIDATE + AI PREDICTION
+  // =====================================================
+
+  $("analyzeFrame").addEventListener("click", async () => {
+    try {
+      validateInput();
+    } catch (error) {
+      notify(error.message, "error");
+      return;
+    }
+
+    busy = true;
+    prediction = null;
+
+    refresh();
+    notify("Validating captured image...");
+
+    try {
+      await request(
+        "/api/upload-image",
+        formData()
+      );
+
+      notify(
+        "Validated. Running local species model..."
+      );
+
+      const result = await request(
+        "/api/predict-species",
+        formData()
+      );
+
+      prediction = result;
+
+      $("cameraResult").hidden = false;
+
+      $("cameraSpecies").textContent =
+        result.predicted_species || "Unknown";
+
+      const confidence = Number(
+        result.confidence_percent
+      );
+
+      $("cameraConfidence").textContent =
+        Number.isFinite(confidence)
+          ? `Species confidence: ${confidence.toFixed(2)}%`
+          : "Species confidence unavailable";
+
+      $("cameraInference").textContent =
+        `Model: ${result.model || "MobileNetV3-Small"} · ` +
+        `Inference: ${result.inference_time_ms ?? "—"} ms`;
+
+      $("cameraLowWarning").hidden = !(
+        Number.isFinite(confidence) &&
+        confidence < 70
+      );
+
+      notify(
+        "Species prediction complete. You may save the inspection.",
+        "success"
+      );
+
+    } catch (error) {
+      notify(
+        "Analysis failed: " + error.message,
+        "error"
+      );
+
+    } finally {
+      busy = false;
+      refresh();
+    }
+  });
+
+  // =====================================================
+  // SAVE TO SQLITE
+  // =====================================================
+
+  $("saveFrame").addEventListener("click", async () => {
+    if (!prediction || saved) return;
+
+    try {
+      validateInput();
+    } catch (error) {
+      notify(error.message, "error");
+      return;
+    }
+
+    busy = true;
+    refresh();
+
+    notify("Saving inspection to browser journal...");
+
+    try {
+      const result = await request(
+        "/api/inspections",
+        formData()
+      );
+
+      saved = true;
+
+      $("cameraSaved").hidden = false;
+
+      $("cameraSaved").textContent =
+        `Saved ${result.sample_id} as record #${result.inspection_id}. ` +
+        "Open Field Journal to review or print.";
+
+      notify(
+        "Inspection saved successfully.",
+        "success"
+      );
+
+      window.bambooxToast?.(
+        "Camera inspection saved."
+      );
+
+    } catch (error) {
+      notify(
+        "Save failed: " + error.message,
+        "error"
+      );
+
+    } finally {
+      busy = false;
+      refresh();
+    }
+  });
+
+  // =====================================================
+  // OPTIONAL LOCAL VIDEO RECORDING
+  // =====================================================
+
+  $("recordClip").addEventListener("click", () => {
+    if (!stream || !window.MediaRecorder) return;
+
+    try {
+      clipChunks = [];
+
+      recorder = new MediaRecorder(stream);
+
+      const localRecorder = recorder;
+
+      recorder.ondataavailable = event => {
+        if (event.data.size) {
+          clipChunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        if (clipChunks.length) {
+          const blob = new Blob(clipChunks, {
+            type: localRecorder.mimeType || "video/webm"
+          });
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+
+          link.href = url;
+
+          const extension =
+            (localRecorder.mimeType || "").includes("mp4")
+              ? "mp4"
+              : "webm";
+
+          link.download =
+            `bamboox_clip_${Date.now()}.${extension}`;
+
+          document.body.append(link);
+          link.click();
+          link.remove();
+
+          window.setTimeout(
+            () => URL.revokeObjectURL(url),
+            30000
+          );
+
+          notify(
+            "Video clip downloaded locally; it was not saved to browser journal.",
+            "success"
+          );
+        }
+
+        recorder = null;
+        clipChunks = [];
+
+        refresh();
+      };
+
+      recorder.start();
+
+      preview.hidden = true;
+      video.hidden = false;
+
+      notify(
+        "Recording video clip locally. Press Stop Recording to download."
+      );
+
+      refresh();
+
+    } catch (error) {
+      recorder = null;
+
+      notify(
+        "Video recording not supported: " + error.message,
+        "error"
+      );
+
+      refresh();
+    }
+  });
+
+  $("stopClip").addEventListener("click", () => {
+    if (recorder?.state === "recording") {
+      recorder.stop();
+    }
+  });
+
+  // =====================================================
+  // CLEANUP
+  // =====================================================
+
+  window.addEventListener("pagehide", () => {
+    stream?.getTracks().forEach(track => track.stop());
+
+    if (imageURL) {
+      URL.revokeObjectURL(imageURL);
+    }
+  });
+
+  $("cameraSampleId").addEventListener("input", () => {
+    if (prediction) {
+      prediction = null;
+      $("cameraResult").hidden = true;
+      refresh();
+    }
+  });
+
+  suggestId();
+  refresh();
+
+})();
+</script>
+
+<script>
+/*
+ * BambooX 3.0 — Camera Growth-Stage Overlay
+ * Uses the existing /api/detect-growth-stage endpoint.
+ * Does not change species predictions or saved records.
+ */
+(() => {
+  const photo = document.getElementById("capturePreview");
+  const stage = document.getElementById("cameraStage");
+  const actions = document.querySelector(".fl-camera-actions");
+  const form = document.querySelector(".fl-camera-form");
+
+  if (!photo || !stage || !actions || !form) {
+    console.error("BambooX camera elements not found.");
+    return;
+  }
+
+  // New growth-stage detection button
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn";
+  button.textContent = "Detect Growth Stage";
+  button.disabled = true;
+  actions.appendChild(button);
+
+  // Overlay drawn over the captured image
+  const NS = "http://www.w3.org/2000/svg";
+  const overlay = document.createElementNS(NS, "svg");
+
+  overlay.setAttribute("aria-hidden", "true");
+  overlay.setAttribute(
+    "preserveAspectRatio",
+    "xMidYMid meet"
+  );
+
+  Object.assign(overlay.style, {
+    position: "absolute",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    zIndex: "2",
+    pointerEvents: "none",
+    display: "none"
+  });
+
+  stage.appendChild(overlay);
+
+  // Separate result panel — never confused with species AI
+  const report = document.createElement("div");
+  report.className = "fl-camera-result";
+  report.hidden = true;
+  report.style.whiteSpace = "pre-line";
+  report.style.lineHeight = "1.8";
+  form.appendChild(report);
+
+  const colors = {
+    matured: "#7EE4A0",
+    old: "#FFBD70",
+    young: "#85C8FF"
+  };
+
+  function svgElement(tag, attributes) {
+    const element = document.createElementNS(NS, tag);
+
+    for (const [name, value] of Object.entries(attributes)) {
+      element.setAttribute(name, String(value));
+    }
+
+    return element;
+  }
+
+  function hasPhoto() {
+    return (
+      !photo.hidden &&
+      !!photo.getAttribute("src") &&
+      photo.naturalWidth > 0
+    );
+  }
+
+  function clearGrowthResults() {
+    overlay.replaceChildren();
+    overlay.style.display = "none";
+    report.hidden = true;
+    button.disabled = !hasPhoto();
+  }
+
+  function drawDetections(data) {
+    overlay.replaceChildren();
+
+    overlay.setAttribute(
+      "viewBox",
+      `0 0 ${data.image_width} ${data.image_height}`
+    );
+
+    for (const detection of data.detections) {
+      const box = detection.bbox;
+      const color = colors[detection.class_name] || "#FFFFFF";
+
+      const x = Math.max(0, box.x1);
+      const y = Math.max(0, box.y1);
+      const width = Math.max(0, box.x2 - box.x1);
+      const height = Math.max(0, box.y2 - box.y1);
+
+      const rectangle = svgElement("rect", {
+        x,
+        y,
+        width,
+        height,
+        fill: "none",
+        stroke: color,
+        "stroke-width": 4
+      });
+
+      overlay.appendChild(rectangle);
+
+      const label =
+        `${detection.class_name.toUpperCase()} ` +
+        `${detection.confidence_percent}%`;
+
+      const labelWidth = label.length * 12 + 18;
+      const labelX = Math.max(
+        0,
+        Math.min(x, data.image_width - labelWidth)
+      );
+      const labelY = Math.max(0, Math.min(y, data.image_height - 32));
+
+      const background = svgElement("rect", {
+        x: labelX,
+        y: labelY,
+        width: labelWidth,
+        height: 30,
+        rx: 3,
+        fill: color
+      });
+
+      const text = svgElement("text", {
+        x: labelX + 8,
+        y: labelY + 22,
+        fill: "#10251F",
+        "font-size": 21,
+        "font-weight": "bold"
+      });
+
+      text.textContent = label;
+
+      overlay.appendChild(background);
+      overlay.appendChild(text);
+    }
+
+    overlay.style.display = "block";
+  }
+
+  function showResults(data) {
+    const lines = [
+      "GROWTH-STAGE DETECTION — YOLOv8n",
+      "",
+      `Detected objects: ${data.detection_count}`,
+      `Matured: ${data.class_counts.matured}`,
+      `Old: ${data.class_counts.old}`,
+      `Young: ${data.class_counts.young}`,
+      `Inference: ${data.inference_time_ms} ms`,
+      "",
+      "Dataset-defined growth-stage categories.",
+      "Not a biological-age or structural-safety certification.",
+      "",
+      "These results are not yet saved to the Field Journal."
+    ];
+
+    report.textContent = lines.join("\n");
+    report.hidden = false;
+  }
+
+  button.addEventListener("click", async () => {
+    if (!hasPhoto()) return;
+
+    const originalSrc = photo.src;
+
+    button.disabled = true;
+    button.textContent = "Detecting...";
+
+    try {
+      // Read the already-captured camera frame.
+      const imageResponse = await fetch(originalSrc);
+
+      if (!imageResponse.ok) {
+        throw new Error("Cannot read captured frame.");
+      }
+
+      const imageBlob = await imageResponse.blob();
+
+      const payload = new FormData();
+
+      payload.append(
+        "file",
+        imageBlob,
+        "bamboox_camera_capture.jpg"
+      );
+
+      const response = await fetch(
+        "/api/detect-growth-stage",
+        {
+          method: "POST",
+          body: payload
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : `Detection failed: HTTP ${response.status}`
+        );
+      }
+
+      // Ignore results if the user captured a newer image.
+      if (photo.hidden || photo.src !== originalSrc) {
+        return;
+      }
+
+      drawDetections(data);
+      showResults(data);
+
+      window.bambooxToast?.(
+        `Growth-stage detection complete: ` +
+        `${data.detection_count} objects`
+      );
+
+    } catch (error) {
+      overlay.style.display = "none";
+      report.textContent =
+        "Growth-stage detection failed: " + error.message;
+      report.hidden = false;
+
+      window.bambooxToast?.(
+        error.message,
+        "error"
+      );
+
+    } finally {
+      button.textContent = "Detect Growth Stage";
+      button.disabled = !hasPhoto();
+    }
+  });
+
+  // Clear old boxes when capturing a different frame.
+  new MutationObserver(clearGrowthResults).observe(photo, {
+    attributes: true,
+    attributeFilter: ["src", "hidden"]
+  });
+
+  photo.addEventListener("load", () => {
+    button.disabled = !hasPhoto();
+  });
+})();
+</script>
+
+
+</body>
+</html>

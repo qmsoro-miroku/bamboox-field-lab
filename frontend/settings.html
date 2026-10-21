@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}SETTINGS{% endblock %}
+{% block page_title %}Settings &amp; system{% endblock %}
+{% block page_subtitle %}Personalize your workspace and inspect the health of this local BambooX installation.{% endblock %}
+{% block header_action %}
+  <button type="button" id="refreshDiagnostics" class="secondary"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg> Recheck system</button>
+{% endblock %}
+{% block content %}
+<div class="settings-intro"><span class="quiet-chip"><span class="live-dot" aria-hidden="true"></span> Local-first workspace</span><span>Preferences are stored on this browser. No internet connection or CDN is required.</span></div>
+
+<div class="settings-grid">
+  <div class="settings-column">
+    <section class="panel settings-panel" aria-labelledby="appearanceTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">◐</span><div><h2 id="appearanceTitle">Appearance</h2><p>Choose the theme that's most comfortable for you.</p></div></div>
+      <div class="theme-picker" role="group" aria-label="Color theme">
+        <button class="theme-choice" data-theme-choice="light" type="button" aria-pressed="false"><span class="theme-swatch swatch-light" aria-hidden="true"><span></span><span></span></span><strong>Light</strong><small>Bright &amp; minimal</small></button>
+        <button class="theme-choice" data-theme-choice="dark" type="button" aria-pressed="false"><span class="theme-swatch swatch-dark" aria-hidden="true"><span></span><span></span></span><strong>Dark</strong><small>Comfortable contrast</small></button>
+        <button class="theme-choice" data-theme-choice="system" type="button" aria-pressed="false"><span class="theme-swatch swatch-system" aria-hidden="true"><span></span><span></span></span><strong>System</strong><small>Follow device</small></button>
+      </div>
+      <p class="settings-helper" id="themeDescription" role="status">Loading appearance preference…</p>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="modelTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">✦</span><div><h2 id="modelTitle">AI models</h2><p>Installed model and the task it actually performs.</p></div></div>
+      <dl class="spec-list">
+        <div><dt>Architecture</dt><dd>MobileNetV3-Small</dd></div>
+        <div><dt>Prediction type</dt><dd>Species recognition</dd></div>
+        <div><dt>Classes</dt><dd>9 BambooBD species</dd></div>
+        <div><dt>Checkpoint file</dt><dd id="checkpointState"><span class="inline-skeleton">Checking…</span></dd></div>
+        <div><dt>Checkpoint size</dt><dd id="checkpointSize">—</dd></div>
+      </dl>
+      <p class="settings-helper">Historical species baseline: <strong>88.78% test accuracy</strong> and <strong>0.8825 macro F1</strong> on the 294-image species test split.</p>
+      <div class="settings-callout" role="note"><strong>Growth-stage detection · YOLOv8n</strong><br>Matured / Old / Young · <span id="growthCheckpointState">Checking checkpoint…</span><br>Checkpoint size: <span id="growthCheckpointSize">—</span></div>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="privacyTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">⌂</span><div><h2 id="privacyTitle">Data &amp; privacy</h2><p>Your installation runs against files on this computer.</p></div></div>
+      <div class="privacy-points"><p><span aria-hidden="true">✓</span> Records are stored in a local SQLite database.</p><p><span aria-hidden="true">✓</span> Inspection images and growth-stage dataset annotations are kept in local project folders.</p><p><span aria-hidden="true">✓</span> This interface does not use online fonts, icons, or a hosted chart library.</p></div>
+      <div class="settings-callout"><strong>Backup reminder:</strong> Before reinstalling or moving BambooX, copy <code>database/</code>, <code>uploads/</code>, <code>dataset/</code>, and <code>models/</code> to a safe location. These are not backed up automatically.</div>
+    </section>
+  </div>
+
+  <div class="settings-column">
+    <section class="panel settings-panel" aria-labelledby="healthTitle">
+      <div class="settings-heading settings-heading-split"><div class="settings-heading-left"><span class="settings-symbol" aria-hidden="true">◈</span><div><h2 id="healthTitle">System health</h2><p>Read-only diagnostics from your running FastAPI server.</p></div></div><span id="systemBadge" class="quiet-chip">Checking…</span></div>
+      <p id="systemStatus" class="settings-helper" role="status" aria-live="polite">Checking local components…</p>
+      <div class="health-list">
+        <div><span class="health-label"><span class="health-indicator" id="apiDot" aria-hidden="true"></span> FastAPI backend</span><strong id="apiState">Checking…</strong></div>
+        <div><span class="health-label"><span class="health-indicator" id="databaseDot" aria-hidden="true"></span> SQLite database</span><strong id="databaseState">Checking…</strong></div>
+        <div><span class="health-label"><span class="health-indicator" id="modelDot" aria-hidden="true"></span> Model checkpoint</span><strong id="modelState">Checking…</strong></div>
+      </div>
+      <p class="settings-helper">These checks confirm file availability—not model inference accuracy, database integrity, or image quality.</p>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="databaseTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">▤</span><div><h2 id="databaseTitle">Local database</h2><p>Inspect records and locate the SQLite file.</p></div></div>
+      <div class="settings-mini-stats"><div><span>Saved inspections</span><strong id="savedRecords">—</strong></div><div><span>Database size</span><strong id="databaseSize">—</strong></div></div>
+      <label class="settings-path-label" for="databasePath">Database file path</label>
+      <div class="settings-path-row"><input id="databasePath" type="text" readonly value="Checking…" aria-label="Local database file path"><button id="copyDatabasePath" class="secondary" type="button" disabled aria-label="Copy database file path">Copy</button></div>
+      <p class="settings-helper">This panel does not edit or delete any inspection data. Manage records through Inspection Records.</p>
+      <a href="/app/records" class="settings-inline-link">View inspection records <span aria-hidden="true">→</span></a>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="storageTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">▧</span><div><h2 id="storageTitle">Local image storage</h2><p>Inspection photos and the growth-stage YOLO dataset.</p></div></div>
+      <div class="settings-mini-stats"><div><span>Stored inspection photos</span><strong id="uploadCount">—</strong></div><div><span>Dataset photos</span><strong id="datasetCount">—</strong></div></div>
+      <div class="labeling-storage-list" id="labelingStorage" aria-live="polite"><p class="settings-helper">Loading growth-stage annotations…</p></div>
+      <p class="settings-helper" id="imageStorageSize">Image storage: —</p>
+      <a href="/app/labeling" class="settings-inline-link">Explore growth dataset <span aria-hidden="true">→</span></a>
+      <div class="settings-callout"><strong>Object annotations.</strong> Counts describe bounding boxes in the YOLO dataset. Legacy dataset files remain separate.</div>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="roadmapTitle">
+      <div class="settings-heading"><span class="settings-symbol" aria-hidden="true">↗</span><div><h2 id="roadmapTitle">Coming later</h2><p>Features intentionally outside the current research prototype.</p></div></div>
+      <div class="roadmap-list"><span>Growth detection journal <small>Planned</small></span><span>Annotation editing tools <small>Planned</small></span><span>Guided backup &amp; restore <small>Planned</small></span></div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const LABELS = [
+    ["matured", "Matured objects"], ["old", "Old objects"], ["young", "Young objects"]
+  ];
+  const formatBytes = bytes => {
+    const n = Number(bytes);
+    if (!Number.isFinite(n) || n < 0) return "—";
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
+    if (n < 1024 ** 3) return `${(n / (1024 ** 2)).toFixed(2)} MB`;
+    return `${(n / (1024 ** 3)).toFixed(2)} GB`;
+  };
+  let databasePath = "";
+
+  function updateThemeChoice() {
+    const selected = window.bambooxTheme?.getPreference?.() || "system";
+    document.querySelectorAll("[data-theme-choice]").forEach(button => {
+      const active = button.dataset.themeChoice === selected;
+      button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("is-selected", active);
+    });
+    const labels = {light:"Light theme selected.", dark:"Dark theme selected.", system:"Following your device's appearance preference."};
+    $("themeDescription").textContent = labels[selected] || labels.system;
+  }
+  document.querySelectorAll("[data-theme-choice]").forEach(button => {
+    button.addEventListener("click", () => {
+      window.bambooxTheme?.setPreference?.(button.dataset.themeChoice);
+      updateThemeChoice();
+      window.bambooxToast?.("Appearance updated.");
+    });
+  });
+  window.addEventListener("bamboox:themechange", updateThemeChoice);
+  updateThemeChoice();
+
+  function setHealth(dot, state, label, level) {
+    $(dot).className = "health-indicator " + (level === "ready" ? "health-ready" : "health-warning");
+    $(state).textContent = label;
+  }
+  function renderOverview(data) {
+    const db = data.database || {};
+    const model = data.model || {};
+    const storage = data.storage || {};
+    const growth = data.growth_model || {};
+    const dataset = storage.growth_dataset || {};
+    $("growthCheckpointState").textContent = growth.checkpoint_present ? "Checkpoint available" : "Checkpoint missing";
+    $("growthCheckpointSize").textContent = growth.checkpoint_present ? formatBytes(growth.checkpoint_size_bytes) : "—";
+    const backendReady = data.backend?.status === "running";
+    const dbReady = db.status === "ready";
+    const modelReady = model.checkpoint_present === true;
+    setHealth("apiDot", "apiState", backendReady ? "Running" : "Unavailable", backendReady ? "ready" : "warning");
+    setHealth("databaseDot", "databaseState", dbReady ? "Ready" : db.status === "missing" ? "Not created" : "Needs attention", dbReady ? "ready" : "warning");
+    setHealth("modelDot", "modelState", modelReady ? "File present" : "File missing", modelReady ? "ready" : "warning");
+    $("systemBadge").textContent = backendReady && dbReady && modelReady ? "Files ready" : "Review status";
+    $("systemStatus").textContent = "Diagnostics checked " + (data.checked_at_utc ? new Date(data.checked_at_utc).toLocaleString() : "just now") + ".";
+    $("checkpointState").textContent = modelReady ? "Available on disk" : "Not found";
+    $("checkpointSize").textContent = modelReady ? formatBytes(model.checkpoint_size_bytes) : "—";
+    $("savedRecords").textContent = dbReady ? Number(db.record_count).toLocaleString() : "—";
+    $("databaseSize").textContent = db.exists ? formatBytes(db.size_bytes) : "—";
+    databasePath = db.path || "";
+    $("databasePath").value = databasePath || "Path unavailable";
+    $("copyDatabasePath").disabled = !databasePath;
+    $("uploadCount").textContent = Number(storage.uploads?.count || 0).toLocaleString();
+    $("datasetCount").textContent = Number(dataset.total_images || 0).toLocaleString();
+    const list = $("labelingStorage");
+    list.replaceChildren();
+    for (const [key, label] of LABELS) {
+      const row = document.createElement("div"); row.className = "storage-label-row";
+      const title = document.createElement("span"); title.textContent = label;
+      const count = document.createElement("strong"); count.textContent = String(dataset.counts?.[key] ?? 0);
+      row.append(title, count); list.append(row);
+    }
+    $("imageStorageSize").textContent = "Image storage: " + formatBytes((storage.uploads?.bytes || 0) + (dataset.total_bytes || 0));
+  }
+
+  async function refreshDiagnostics() {
+    const button = $("refreshDiagnostics");
+    button.disabled = true;
+    button.classList.add("is-loading");
+    $("systemStatus").textContent = "Reading local system information…";
+    try {
+      const response = await fetch("/api/settings/overview", {cache:"no-store"});
+      if (!response.ok) throw new Error("Server returned HTTP " + response.status);
+      const data = await response.json();
+      renderOverview(data);
+    } catch (error) {
+      $("systemBadge").textContent = "Unavailable";
+      $("systemStatus").textContent = "Unable to read diagnostics: " + error.message;
+      setHealth("apiDot", "apiState", "Check backend", "warning");
+      setHealth("databaseDot", "databaseState", "Unknown", "warning");
+      setHealth("modelDot", "modelState", "Unknown", "warning");
+      window.bambooxToast?.("System check failed: " + error.message, "error");
+    } finally {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
+  }
+  $("refreshDiagnostics").addEventListener("click", refreshDiagnostics);
+  $("copyDatabasePath").addEventListener("click", async () => {
+    if (!databasePath) return;
+    try {
+      await navigator.clipboard.writeText(databasePath);
+      window.bambooxToast?.("Database path copied.");
+    } catch {
+      $("databasePath").focus();
+      $("databasePath").select();
+      window.bambooxToast?.("Path selected. Press Ctrl+C to copy.", "error");
+    }
+  });
+  refreshDiagnostics();
+})();
+</script>
+{% endblock %}

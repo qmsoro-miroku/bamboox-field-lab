@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+database/
+uploads/
+dataset/
+*Backup*/
+*backup*/
+*.log
+node_modules/
+.DS_Store

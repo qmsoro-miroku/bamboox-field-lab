@@ -1,0 +1,265 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b211a">
+
+  <title>
+    BambooX Field Lab | {% block title %}Workspace{% endblock %}
+  </title>
+
+  <script>
+    try {
+      const saved = localStorage.getItem("bamboox-theme");
+      const dark = saved === "dark" ||
+        (saved !== "light" &&
+         matchMedia("(prefers-color-scheme: dark)").matches);
+
+      document.documentElement.dataset.theme =
+        dark ? "dark" : "light";
+    } catch (_) {
+      document.documentElement.dataset.theme = "light";
+    }
+  </script>
+
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/fieldlab.css">
+  <link rel="stylesheet" href="/assets/fieldlab-upgrade.css?v=20261021b">
+
+  <script defer src="/assets/shell.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#mainContent">
+    Skip to main content
+  </a>
+
+  <svg class="svg-sprite"
+       xmlns="http://www.w3.org/2000/svg"
+       aria-hidden="true"
+       focusable="false">
+
+    <symbol id="i-grid" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+    </symbol>
+
+    <symbol id="i-home" viewBox="0 0 24 24">
+      <path d="m3 10 9-7 9 7v10H3Z"/>
+      <path d="M9 21v-8h6v8"/>
+    </symbol>
+
+    <symbol id="i-compass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="m16 8-3 5-5 3 3-5Z"/>
+    </symbol>
+
+    <symbol id="i-camera" viewBox="0 0 24 24">
+      <path d="M4 7h4l2-3h4l2 3h4v13H4Z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </symbol>
+
+    <symbol id="i-scan" viewBox="0 0 24 24">
+      <path d="M7 3H5a2 2 0 0 0-2 2v2m14-4h2a2 2 0 0 1 2 2v2M3 17v2a2 2 0 0 0 2 2h2m14-4v2a2 2 0 0 1-2 2h-2M7 12h10m-5-5v10"/>
+    </symbol>
+
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <rect x="5" y="3" width="14" height="18" rx="2"/>
+      <path d="M9 8h6M9 12h6M9 16h4"/>
+    </symbol>
+
+    <symbol id="i-tag" viewBox="0 0 24 24">
+      <path d="M20 13 12 21 3 12V4h8l9 9Z"/>
+      <circle cx="7.5" cy="8.5" r="1"/>
+    </symbol>
+
+    <symbol id="i-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+    </symbol>
+
+    <symbol id="i-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14"/>
+    </symbol>
+
+    <symbol id="i-moon" viewBox="0 0 24 24">
+      <path d="M20 16A8 8 0 0 1 8 4 8.5 8.5 0 1 0 20 16Z"/>
+    </symbol>
+
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24">
+      <path d="M20 4C11 3 5 8 5 15a5 5 0 0 0 5 5c7 0 11-7 10-16ZM5 20c3-5 6-8 11-11"/>
+    </symbol>
+  </svg>
+
+  <div class="app-shell fl-app-shell">
+    <div class="main-area fl-main-area">
+
+      <header class="fl-topbar" aria-label="Field Lab navigation">
+
+        <div class="fl-topbar-upper">
+
+          <a class="fl-topbrand"
+             href="/"
+             aria-label="BambooX Field Lab Home">
+            <span class="fl-topbrand-mark">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-leaf"/>
+              </svg>
+            </span>
+            <span>
+              <strong>Bamboo<span>X</span></strong>
+              <small>FIELD LAB / EXPEDITION</small>
+            </span>
+          </a>
+
+          <div class="fl-topbar-tools">
+            {% block topbar_link %}{% endblock %}
+
+            <span class="fl-current-system">
+              <span class="fl-status-dot" aria-hidden="true"></span>
+              SPECIES + GROWTH · LOCAL
+            </span>
+
+            <button id="themeToggle"
+                    class="fl-theme-button"
+                    type="button"
+                    aria-label="Toggle dark mode"
+                    aria-pressed="false">
+
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-moon"/>
+              </svg>
+
+              <span id="themeLabel">Dark mode</span>
+            </button>
+          </div>
+        </div>
+
+        {% block main_navigation %}
+        <nav class="fl-topnav" aria-label="Main navigation">
+
+          <a href="/"
+             class="fl-navitem{% if active_page == 'home' %} is-active{% endif %}"
+             {% if active_page == 'home' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-home"/>
+            </svg>
+            Home
+          </a>
+
+          <a href="/app/hub"
+             class="fl-navitem{% if active_page == 'hub' %} is-active{% endif %}"
+             {% if active_page == 'hub' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-compass"/>
+            </svg>
+            Mission Hub
+          </a>
+
+          <a href="/app"
+             class="fl-navitem{% if active_page == 'dashboard' %} is-active{% endif %}"
+             {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-grid"/>
+            </svg>
+            Dashboard
+          </a>
+
+          <a href="/app/inspection"
+             class="fl-navitem{% if active_page == 'inspection' %} is-active{% endif %}"
+             {% if active_page == 'inspection' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-scan"/>
+            </svg>
+            Image Scanner
+          </a>
+
+          <a href="/app/camera"
+             class="fl-navitem{% if active_page == 'camera' %} is-active{% endif %}"
+             {% if active_page == 'camera' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-camera"/>
+            </svg>
+            Live Camera
+          </a>
+
+          <a href="/app/records"
+             class="fl-navitem{% if active_page == 'records' %} is-active{% endif %}"
+             {% if active_page == 'records' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-list"/>
+            </svg>
+            Field Journal
+          </a>
+
+          <a href="/app/labeling"
+             class="fl-navitem{% if active_page == 'labeling' %} is-active{% endif %}"
+             {% if active_page == 'labeling' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-tag"/>
+            </svg>
+            Growth Dataset
+          </a>
+
+          <a href="/app/settings"
+             class="fl-navitem{% if active_page == 'settings' %} is-active{% endif %}"
+             {% if active_page == 'settings' %}aria-current="page"{% endif %}>
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-settings"/>
+            </svg>
+            Settings
+          </a>
+
+        </nav>
+        {% endblock %}
+      </header>
+
+      <main class="page-content"
+            id="mainContent"
+            tabindex="-1">
+
+        {% block page_header %}
+        <header class="page-header">
+
+          <div>
+            <div class="eyebrow">
+              BAMBOOX /
+              {% block breadcrumb %}FIELD LAB{% endblock %}
+            </div>
+
+            <h1>
+              {% block page_title %}BambooX Field Lab{% endblock %}
+            </h1>
+
+            <p class="page-subtitle">
+              {% block page_subtitle %}{% endblock %}
+            </p>
+          </div>
+
+          <div class="header-actions">
+            {% block header_action %}{% endblock %}
+          </div>
+
+        </header>
+
+        {% endblock %}
+        {% block content %}{% endblock %}
+
+      </main>
+    </div>
+  </div>
+
+  <div id="toastRegion"
+       class="toast-region"
+       role="status"
+       aria-live="polite"></div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

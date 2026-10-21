@@ -1,0 +1,41 @@
+{
+  "species_classes": [
+    "Betua",
+    "Bhudum",
+    "Chaina",
+    "Ghati",
+    "Hedge",
+    "Kanta",
+    "Mirtinga",
+    "Sharna",
+    "Sine kais"
+  ],
+  "growth_classes": [
+    "matured",
+    "old",
+    "young"
+  ],
+  "species_input": [
+    1,
+    3,
+    224,
+    224
+  ],
+  "growth_input": [
+    1,
+    3,
+    640,
+    640
+  ],
+  "growth_output": [
+    1,
+    7,
+    8400
+  ],
+  "growth_confidence": 0.25,
+  "growth_iou": 0.7,
+  "species_onnx_max_error": 1.0251998901367188e-05,
+  "growth_onnx_max_error": 0.001556396484375,
+  "species_model_bytes": 6117939,
+  "growth_model_bytes": 12638932
+}

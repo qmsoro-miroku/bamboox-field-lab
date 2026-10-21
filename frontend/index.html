@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}DASHBOARD{% endblock %}
+{% block page_title %}Inspection overview{% endblock %}
+{% block page_subtitle %}Live inspection activity, local AI performance, and dataset readiness.{% endblock %}
+{% block header_action %}
+<div class="header-action-group">
+  <a class="btn btn-secondary" href="/app/inspection"><svg class="icon"><use href="#i-plus"/></svg>New Inspection</a>
+  <button class="btn btn-secondary" id="refreshBtn" type="button"><svg class="icon"><use href="#i-refresh"/></svg>Refresh</button>
+</div>
+{% endblock %}
+{% block content %}
+<div class="page-intro"><div><span class="live-dot"></span> Local SQLite workspace</div><span id="dashboardStatus" role="status" aria-live="polite">Loading dashboard...</span></div>
+
+<section class="cards dashboard-stats" aria-label="Inspection statistics">
+  <article class="card metric-card"><div class="metric-top"><span>Total inspections</span><span class="metric-icon">▤</span></div><div class="metric-value" id="totalInspections">—</div><p>Saved inspection records</p></article>
+  <article class="card metric-card"><div class="metric-top"><span>Species identified</span><span class="metric-icon">❈</span></div><div class="metric-value" id="speciesIdentified">—</div><p>Unique predicted species</p></article>
+  <article class="card metric-card"><div class="metric-top"><span>Mean AI confidence</span><span class="metric-icon">◎</span></div><div class="metric-value" id="avgConfidence">—</div><p>Saved species prediction confidence</p></article>
+  <article class="card metric-card"><div class="metric-top"><span>Mean inference time</span><span class="metric-icon">◷</span></div><div class="metric-value" id="avgInference">—</div><p>Recorded CPU inference timing</p></article>
+</section>
+
+<div class="dashboard-grid dashboard-equal">
+  <section class="panel feature-panel" aria-labelledby="distributionHeading">
+    <div class="section-heading"><div><h2 id="distributionHeading">Species distribution</h2><p class="note">Proportion of saved species predictions</p></div><span class="quiet-chip">Local records</span></div>
+    <div id="speciesChart" class="species-visual" aria-live="polite"><div class="empty-state">Loading distribution...</div></div>
+  </section>
+  <section class="panel feature-panel" aria-labelledby="modelHeading">
+    <div class="section-heading"><div><h2 id="modelHeading">AI model information</h2><p class="note">Historical benchmark · BambooBD test set</p></div><span class="quiet-chip">Species AI</span></div>
+    <div class="model-hero"><div class="model-hero-icon">AI</div><div><strong>MobileNetV3-Small</strong><span>9-species recognition baseline · CPU inference</span></div></div>
+    <div class="model-spec-grid">
+      <div><span>Test accuracy</span><strong>88.78%</strong></div>
+      <div><span>Macro F1</span><strong>0.8825</strong></div>
+      <div><span>Training time</span><strong>114.03 s</strong></div>
+      <div><span>Checkpoint</span><strong>5.96 MB</strong></div>
+    </div>
+    <p class="model-disclaimer">Based on the historical 294-image BambooBD species test set. Growth-stage detection uses a separate YOLO model.</p>
+  </section>
+</div>
+
+<div class="dashboard-lower">
+  <section class="panel" aria-labelledby="recentHeading">
+    <div class="section-heading"><div><h2 id="recentHeading">Recent inspections</h2><p class="note">Five most recent saved records</p></div><a class="subtle-link" href="/app/records">View all →</a></div>
+    <div id="recentList" class="recent-list"><div class="empty-state">Loading inspections...</div></div>
+  </section>
+  <section class="panel" aria-labelledby="labelHeading">
+    <div class="section-heading"><div><h2 id="labelHeading">Growth-stage dataset</h2><p class="note">YOLO annotations · Matured / Old / Young</p></div><span class="quiet-chip">Dataset</span></div>
+    <div class="label-progress-count"><strong id="processedCount">—</strong><span id="totalLabelCount"> / — dataset images</span></div>
+    <div class="progress-track" role="progressbar" id="dashboardProgress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Images with valid annotations"><span id="dashboardProgressBar"></span></div>
+    <div class="label-counts" id="labelCounts"><p class="note">Loading image labels...</p></div>
+    <p class="model-disclaimer">Counts describe existing object annotations in the training, validation, and test splits.</p>
+    <a class="btn btn-secondary stretch-link" href="/app/labeling">Explore growth annotations →</a>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const NS = "http://www.w3.org/2000/svg";
+  const palette = ["#22784e", "#94c96d", "#428cb8", "#d3a34c", "#9b81ba", "#4a9a91", "#d57e73", "#7e9e4b", "#697c98"];
+
+  function animateNumber(id, number, suffix = "", decimals = 0) {
+    const element = $(id);
+    if (number === null || number === undefined || !Number.isFinite(Number(number))) {
+      element.textContent = "—";
+      return;
+    }
+    const target = Number(number);
+    if (reducedMotion) { element.textContent = target.toFixed(decimals) + suffix; return; }
+    const start = performance.now(), duration = 700;
+    function frame(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      element.textContent = (target * eased).toFixed(decimals) + suffix;
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function drawSpecies(species) {
+    const host = $("speciesChart");
+    host.replaceChildren();
+    const data = species.filter(item => Number(item.total) > 0);
+    if (!data.length) {
+      const empty = document.createElement("div"); empty.className = "empty-state";
+      empty.textContent = "No species predictions yet. Save an inspection to populate this chart.";
+      host.append(empty); return;
+    }
+    const total = data.reduce((sum, item) => sum + Number(item.total), 0);
+    const chart = document.createElement("div"); chart.className = "donut-container";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 180 180");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Species distribution across ${total} saved predictions`);
+    const bg = document.createElementNS(NS, "circle");
+    bg.setAttribute("cx", "90"); bg.setAttribute("cy", "90"); bg.setAttribute("r", "64");
+    bg.setAttribute("fill", "none"); bg.setAttribute("stroke", "var(--surface-soft)"); bg.setAttribute("stroke-width", "21");
+    svg.append(bg);
+    const circumference = 2 * Math.PI * 64;
+    let offset = 0;
+    data.forEach((item, index) => {
+      const slice = document.createElementNS(NS, "circle");
+      const part = Number(item.total) / total * circumference;
+      slice.setAttribute("cx", "90"); slice.setAttribute("cy", "90"); slice.setAttribute("r", "64");
+      slice.setAttribute("fill", "none"); slice.setAttribute("stroke", palette[index % palette.length]);
+      slice.setAttribute("stroke-width", "21"); slice.setAttribute("stroke-dasharray", `${part} ${circumference - part}`);
+      slice.setAttribute("stroke-dashoffset", String(-offset));
+      slice.setAttribute("transform", "rotate(-90 90 90)");
+      svg.append(slice); offset += part;
+    });
+    const center = document.createElement("div"); center.className = "donut-center";
+    const strong = document.createElement("strong"); strong.textContent = total;
+    const caption = document.createElement("span"); caption.textContent = "predictions";
+    center.append(strong, caption); chart.append(svg, center);
+    const legend = document.createElement("div"); legend.className = "donut-legend";
+    data.forEach((item, index) => {
+      const row = document.createElement("div"); row.className = "legend-row";
+      const dot = document.createElement("i"); dot.className = "legend-dot"; dot.style.backgroundColor = palette[index % palette.length];
+      const name = document.createElement("span"); name.textContent = item.species;
+      const value = document.createElement("strong"); value.textContent = `${(Number(item.total) / total * 100).toFixed(1)}%`;
+      const count = document.createElement("small"); count.textContent = `${item.total} images`;
+      row.append(dot, name, value, count); legend.append(row);
+    });
+    host.append(chart, legend);
+  }
+
+  function confidenceBadge(confidence) {
+    const badge = document.createElement("span"); badge.className = "confidence-badge";
+    if (confidence === null || confidence === undefined) { badge.textContent = "No score"; return badge; }
+    const score = Number(confidence);
+    badge.textContent = `${score.toFixed(2)}%`;
+    badge.classList.add(score < 70 ? "confidence-low" : score < 85 ? "confidence-medium" : "confidence-high");
+    return badge;
+  }
+
+  function drawRecent(records) {
+    const host = $("recentList"); host.replaceChildren();
+    if (!records.length) {
+      const empty = document.createElement("div"); empty.className = "empty-state";
+      empty.textContent = "No saved inspections. Start with your first bamboo image.";
+      host.append(empty); return;
+    }
+    records.forEach(record => {
+      const row = document.createElement("article"); row.className = "inspection-row";
+      const thumb = document.createElement("div"); thumb.className = "inspection-thumb";
+      if (record.image_saved) {
+        const image = document.createElement("img");
+        image.loading = "lazy"; image.alt = `Image for sample ${record.sample_id || "unknown"}`;
+        image.src = `/api/dashboard/image/${encodeURIComponent(record.id)}`;
+        image.addEventListener("error", () => { thumb.replaceChildren("No image"); });
+        thumb.append(image);
+      } else { thumb.textContent = "No image"; }
+      const content = document.createElement("div"); content.className = "inspection-main";
+      const title = document.createElement("strong"); title.textContent = record.sample_id || "Untitled sample";
+      const meta = document.createElement("span");
+      meta.textContent = `${record.predicted_species || "Unknown species"} · ${record.origin || "Location not provided"}`;
+      content.append(title, meta);
+      const result = document.createElement("div"); result.className = "inspection-result";
+      result.append(confidenceBadge(record.confidence_score));
+      if (record.confidence_score !== null && Number(record.confidence_score) < 70) {
+        const warning = document.createElement("small"); warning.className = "low-confidence-note";
+        warning.textContent = "Low confidence · manual review"; result.append(warning);
+      }
+      row.append(thumb, content, result); host.append(row);
+    });
+  }
+
+  function drawLabels(labeling) {
+    const data = labeling || {counts: {}, total_images: 0, annotated_images: 0};
+    $("processedCount").textContent = data.annotated_images ?? 0;
+    $("totalLabelCount").textContent = ` / ${data.total_images ?? 0} images annotated`;
+    const progress = data.total_images ? data.annotated_images / data.total_images * 100 : 0;
+    $("dashboardProgressBar").style.width = progress + "%";
+    $("dashboardProgress").setAttribute("aria-valuenow", String(progress));
+    const labels = [["matured","Matured objects"],["old","Old objects"],["young","Young objects"]];
+    const host = $("labelCounts"); host.replaceChildren();
+    labels.forEach(([key, name]) => {
+      const row = document.createElement("div"); row.className = "label-count-item";
+      const title = document.createElement("span"); title.textContent = name;
+      const count = document.createElement("strong"); count.textContent = data.counts?.[key] ?? 0;
+      row.append(title, count); host.append(row);
+    });
+  }
+
+  async function loadDashboard() {
+    const refreshBtn = $("refreshBtn"); refreshBtn.disabled = true;
+    $("dashboardStatus").textContent = "Updating from SQLite...";
+    try {
+      const response = await fetch("/api/dashboard/summary", {cache: "no-store"});
+      if (!response.ok) throw new Error(`Server error (${response.status})`);
+      const data = await response.json();
+      animateNumber("totalInspections", data.total_inspections);
+      animateNumber("speciesIdentified", data.species_identified);
+      animateNumber("avgConfidence", data.average_confidence, "%", 2);
+      animateNumber("avgInference", data.average_inference_ms, " ms", 2);
+      drawSpecies(data.species_distribution || []);
+      drawRecent(data.recent_inspections || []);
+      drawLabels(data.growth_dataset);
+      $("dashboardStatus").textContent = "Updated from local SQLite";
+    } catch (error) {
+      $("dashboardStatus").textContent = `Unable to load dashboard: ${error.message}`;
+      window.bambooxToast?.(error.message, "error");
+    } finally { refreshBtn.disabled = false; }
+  }
+  $("refreshBtn").addEventListener("click", loadDashboard);
+  loadDashboard();
+})();
+</script>
+{% endblock %}

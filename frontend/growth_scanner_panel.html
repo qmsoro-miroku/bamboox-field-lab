@@ -1,0 +1,466 @@
+
+<!-- BambooX Growth-Stage Scanner: additive panel -->
+<section id="growthScanner" class="gx-panel" aria-labelledby="gxTitle">
+
+  <div class="gx-kicker">
+    GROWTH-STAGE RECONNAISSANCE
+  </div>
+
+  <h2 id="gxTitle">Growth-stage detection</h2>
+
+  <p class="gx-description">
+    Upload a bamboo image and detect dataset-defined
+    <strong>Matured, Old, and Young</strong> objects using
+    the locally trained YOLOv8n model.
+    This mode is separate from species recognition.
+  </p>
+
+  <div class="gx-layout">
+
+    <div>
+      <label class="gx-dropzone" id="gxDropzone">
+        <strong>Choose or drop a bamboo image</strong>
+        <span>JPG, PNG, WEBP · Maximum 10 MB</span>
+        <input
+          id="gxFile"
+          type="file"
+          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+      </label>
+
+      <div class="gx-preview-stage">
+        <div class="gx-empty" id="gxEmpty">
+          Your bamboo image will appear here.
+        </div>
+
+        <div class="gx-image-wrap" id="gxImageWrap" hidden>
+          <img id="gxImage" alt="Bamboo image for growth-stage detection">
+          <svg
+            id="gxOverlay"
+            xmlns="http://www.w3.org/2000/svg"
+            preserveAspectRatio="xMidYMid meet"
+            aria-hidden="true">
+          </svg>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        class="gx-run"
+        id="gxRun"
+        disabled>
+        Scan Growth Stage
+      </button>
+
+      <p class="gx-status"
+         id="gxStatus"
+         role="status"
+         aria-live="polite">
+        Select a bamboo image to begin.
+      </p>
+    </div>
+
+    <div class="gx-results">
+      <div class="gx-kicker">DETECTION REPORT</div>
+      <h3>Object Analysis</h3>
+
+      <div class="gx-counts">
+        <div class="gx-stat">
+          <strong id="gxMatured">—</strong>
+          <small>Matured</small>
+        </div>
+
+        <div class="gx-stat">
+          <strong id="gxOld">—</strong>
+          <small>Old</small>
+        </div>
+
+        <div class="gx-stat">
+          <strong id="gxYoung">—</strong>
+          <small>Young</small>
+        </div>
+      </div>
+
+      <p class="gx-meta" id="gxSummary">
+        No scan performed yet.
+      </p>
+
+      <div class="gx-result-list" id="gxDetectionList"></div>
+
+      <div class="gx-disclaimer">
+        Results are dataset-defined growth-stage predictions.
+        They do not establish biological age, bamboo quality,
+        or structural safety.
+
+        Growth-stage detections are not yet saved to SQLite.
+        Existing species inspection records remain separate.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(() => {
+  "use strict";
+
+  const root = document.getElementById("growthScanner");
+  if (!root || root.dataset.initialized === "true") return;
+
+  root.dataset.initialized = "true";
+
+  const $ = id => root.querySelector("#" + id);
+
+  const fileInput = $("gxFile");
+  const dropzone = $("gxDropzone");
+  const image = $("gxImage");
+  const imageWrap = $("gxImageWrap");
+  const overlay = $("gxOverlay");
+  const empty = $("gxEmpty");
+  const button = $("gxRun");
+  const status = $("gxStatus");
+  const summary = $("gxSummary");
+  const list = $("gxDetectionList");
+
+  const colors = {
+    matured: "#7EE4A0",
+    old: "#FFBD70",
+    young: "#85C8FF"
+  };
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  let selectedFile = null;
+  let previewURL = null;
+  let version = 0;
+  let busy = false;
+  let controller = null;
+
+  function setStatus(message, kind = "") {
+    status.textContent = message;
+    status.dataset.kind = kind;
+  }
+
+  function resetResults() {
+    overlay.replaceChildren();
+    list.replaceChildren();
+
+    $("gxMatured").textContent = "—";
+    $("gxOld").textContent = "—";
+    $("gxYoung").textContent = "—";
+
+    summary.textContent = "No scan performed yet.";
+  }
+
+  function setFile(file) {
+    version += 1;
+
+    if (controller) {
+      controller.abort();
+      controller = null;
+    }
+
+    busy = false;
+
+    if (previewURL) {
+      URL.revokeObjectURL(previewURL);
+      previewURL = null;
+    }
+
+    resetResults();
+    button.disabled = true;
+
+    selectedFile = null;
+    image.removeAttribute("src");
+    imageWrap.hidden = true;
+    empty.hidden = false;
+
+    if (!file) {
+      setStatus("Select a bamboo image to begin.");
+      return;
+    }
+
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
+
+    if (!allowed.includes(file.type)) {
+      setStatus("Only JPG, PNG, and WEBP images are supported.", "error");
+      return;
+    }
+
+    if (!file.size || file.size > 10 * 1024 * 1024) {
+      setStatus("Image must be between 1 byte and 10 MB.", "error");
+      return;
+    }
+
+    selectedFile = file;
+    previewURL = URL.createObjectURL(file);
+
+    const currentVersion = version;
+
+    image.onload = () => {
+      if (currentVersion !== version) return;
+
+      empty.hidden = true;
+      imageWrap.hidden = false;
+      button.disabled = false;
+
+      setStatus("Image ready. Click Scan Growth Stage.");
+    };
+
+    image.onerror = () => {
+      if (currentVersion !== version) return;
+
+      selectedFile = null;
+      button.disabled = true;
+      imageWrap.hidden = true;
+      empty.hidden = false;
+
+      setStatus("The selected image could not be displayed.", "error");
+    };
+
+    image.src = previewURL;
+  }
+
+  function svgNode(tag, attributes) {
+    const node = document.createElementNS(SVG_NS, tag);
+
+    for (const [key, value] of Object.entries(attributes)) {
+      node.setAttribute(key, String(value));
+    }
+
+    return node;
+  }
+
+  function drawBoxes(data) {
+    overlay.replaceChildren();
+
+    const W = Number(data.image_width);
+    const H = Number(data.image_height);
+
+    if (!(W > 0 && H > 0)) return;
+
+    overlay.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+    const fontSize = Math.max(12, Math.round(W / 35));
+    const labelHeight = fontSize + 10;
+    const strokeWidth = Math.max(2, W / 230);
+
+    for (const detection of data.detections || []) {
+      const b = detection.bbox || {};
+      const x1 = Number(b.x1);
+      const y1 = Number(b.y1);
+      const x2 = Number(b.x2);
+      const y2 = Number(b.y2);
+
+      if (![x1, y1, x2, y2].every(Number.isFinite)) {
+        continue;
+      }
+
+      const name = detection.class_name;
+      const color = colors[name] || "#FFFFFF";
+
+      const x = Math.max(0, Math.min(W, x1));
+      const y = Math.max(0, Math.min(H, y1));
+      const w = Math.max(0, Math.min(W, x2) - x);
+      const h = Math.max(0, Math.min(H, y2) - y);
+
+      overlay.appendChild(svgNode("rect", {
+        x, y, width: w, height: h,
+        fill: "none",
+        stroke: color,
+        "stroke-width": strokeWidth
+      }));
+
+      const confidence = Number(detection.confidence_percent);
+      const label = name.toUpperCase() + " " +
+        (Number.isFinite(confidence)
+          ? confidence.toFixed(1) + "%"
+          : "—");
+
+      const labelWidth = Math.min(
+        W,
+        label.length * fontSize * 0.65 + 12
+      );
+
+      const labelX = Math.max(0, Math.min(x, W - labelWidth));
+      const labelY = Math.max(0, Math.min(y, H - labelHeight));
+
+      overlay.appendChild(svgNode("rect", {
+        x: labelX,
+        y: labelY,
+        width: labelWidth,
+        height: labelHeight,
+        rx: 3,
+        fill: color
+      }));
+
+      const caption = svgNode("text", {
+        x: labelX + 5,
+        y: labelY + labelHeight - 7,
+        fill: "#10251F",
+        "font-size": fontSize,
+        "font-weight": "bold"
+      });
+
+      caption.textContent = label;
+      overlay.appendChild(caption);
+    }
+  }
+
+  function displayResults(data) {
+    const counts = data.class_counts || {};
+
+    $("gxMatured").textContent = counts.matured ?? 0;
+    $("gxOld").textContent = counts.old ?? 0;
+    $("gxYoung").textContent = counts.young ?? 0;
+
+    summary.textContent =
+      `${data.detection_count ?? 0} objects detected · ` +
+      `${data.inference_time_ms ?? "—"} ms · ` +
+      `${data.model || "YOLOv8n"}`;
+
+    list.replaceChildren();
+
+    const detections = data.detections || [];
+
+    if (!detections.length) {
+      const message = document.createElement("p");
+      message.className = "gx-meta";
+      message.textContent =
+        "No objects detected at the model's confidence threshold.";
+      list.appendChild(message);
+      return;
+    }
+
+    for (const detection of detections) {
+      const item = document.createElement("div");
+      item.className = "gx-result-item";
+
+      const left = document.createElement("span");
+      left.className = "gx-result-name";
+
+      const dot = document.createElement("span");
+      dot.className = "gx-dot";
+      dot.style.background =
+        colors[detection.class_name] || "#FFFFFF";
+
+      const name = document.createElement("span");
+      name.textContent =
+        detection.class_name.toUpperCase();
+
+      left.append(dot, name);
+
+      const score = document.createElement("strong");
+      score.textContent =
+        Number(detection.confidence_percent).toFixed(2) + "%";
+
+      item.append(left, score);
+      list.appendChild(item);
+    }
+  }
+
+  async function runScan() {
+    if (!selectedFile || busy) return;
+
+    const file = selectedFile;
+    const currentVersion = version;
+
+    controller = new AbortController();
+    const activeController = controller;
+
+    busy = true;
+    button.disabled = true;
+    button.textContent = "Scanning bamboo...";
+
+    resetResults();
+    setStatus("Running local YOLO growth-stage detection...");
+
+    try {
+      const payload = new FormData();
+      payload.append("file", file);
+
+      const response = await fetch(
+        "/api/detect-growth-stage",
+        {
+          method: "POST",
+          body: payload,
+          signal: activeController.signal
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === "string"
+            ? data.detail
+            : `HTTP ${response.status}`
+        );
+      }
+
+      if (currentVersion !== version) return;
+
+      drawBoxes(data);
+      displayResults(data);
+
+      setStatus("Growth-stage scan completed.", "success");
+
+      window.bambooxToast?.(
+        "Growth-stage detection completed."
+      );
+
+    } catch (error) {
+      if (error.name !== "AbortError" &&
+          currentVersion === version) {
+        setStatus(
+          "Growth-stage scan failed: " + error.message,
+          "error"
+        );
+      }
+
+    } finally {
+      if (controller === activeController) {
+        controller = null;
+      }
+
+      if (currentVersion === version) {
+        busy = false;
+        button.disabled = !selectedFile;
+        button.textContent = "Scan Growth Stage";
+      }
+    }
+  }
+
+  fileInput.addEventListener("change", () => {
+    setFile(fileInput.files?.[0] || null);
+  });
+
+  dropzone.addEventListener("dragover", event => {
+    event.preventDefault();
+    dropzone.classList.add("gx-dragging");
+  });
+
+  dropzone.addEventListener("dragleave", () => {
+    dropzone.classList.remove("gx-dragging");
+  });
+
+  dropzone.addEventListener("drop", event => {
+    event.preventDefault();
+    dropzone.classList.remove("gx-dragging");
+    setFile(event.dataTransfer?.files?.[0] || null);
+  });
+
+  button.addEventListener("click", runScan);
+
+  window.addEventListener("pagehide", () => {
+    controller?.abort();
+
+    if (previewURL) {
+      URL.revokeObjectURL(previewURL);
+    }
+  });
+})();
+</script>

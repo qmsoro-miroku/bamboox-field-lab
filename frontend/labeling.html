@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Growth Dataset{% endblock %}
+{% block body_class %}fl-dataset-page{% endblock %}
+{% block breadcrumb %}DATASET REVIEW{% endblock %}
+{% block page_title %}Growth-stage dataset{% endblock %}
+{% block page_subtitle %}Explore the images and bounding-box annotations used by the YOLO growth model.{% endblock %}
+{% block header_action %}<a class="btn btn-secondary" href="/api/growth-dataset/export" download><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg> Export annotations</a>{% endblock %}
+{% block content %}
+<section class="gd-stats" aria-label="Growth dataset statistics">
+  <div class="stat"><span>Dataset images</span><strong id="gdTotal">—</strong></div>
+  <div class="stat"><span>Annotated objects</span><strong id="gdObjects">—</strong></div>
+  <div class="stat"><span class="gd-stage matured">Matured</span><strong id="gdMatured">—</strong></div>
+  <div class="stat"><span class="gd-stage old">Old</span><strong id="gdOld">—</strong></div>
+  <div class="stat"><span class="gd-stage young">Young</span><strong id="gdYoung">—</strong></div>
+</section>
+<section class="panel gd-workspace" aria-labelledby="gdReviewTitle">
+  <div class="section-heading"><div><span class="eyebrow">YOLO ANNOTATION REVIEW</span><h2 id="gdReviewTitle">Explore the dataset</h2></div><span class="quiet-chip" id="gdDataset">Local dataset</span></div>
+  <div class="gd-toolbar">
+    <label>Dataset split<select id="gdSplit"><option value="all">All splits</option><option value="train">Training</option><option value="valid">Validation</option><option value="test">Test</option></select></label>
+    <label>Growth stage<select id="gdStage"><option value="all">All stages</option><option value="matured">Matured</option><option value="old">Old</option><option value="young">Young</option><option value="needs_review">Missing / invalid annotations</option></select></label>
+    <div class="gd-navigation"><button class="secondary" id="gdPrev" type="button" disabled aria-label="Previous image">← Previous</button><span id="gdPosition" aria-live="polite">Loading…</span><button class="secondary" id="gdNext" type="button" disabled aria-label="Next image">Next →</button></div>
+  </div>
+  <div class="gd-review-grid">
+    <div class="gd-photo-stage">
+      <div id="gdEmpty" class="empty-state" role="status">Loading growth-stage images…</div>
+      <div class="gd-image-wrap" id="gdImageWrap" hidden><img id="gdImage" alt="Bamboo growth-stage dataset image"><svg id="gdOverlay" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg></div>
+    </div>
+    <aside class="gd-report">
+      <span class="eyebrow">IMAGE ANNOTATIONS</span><h3 id="gdFilename">Select an image</h3><p class="note" id="gdImageMeta"></p>
+      <div id="gdBoxes" class="gd-box-list"></div>
+      <p class="safe-note">Boxes show dataset annotations, rather than a fresh model prediction. One image may contain multiple objects. The original dataset files stay unchanged.</p>
+      <a class="fl-button fl-button-primary" href="/app/inspection#growth">Try a growth scan ↗</a>
+    </aside>
+  </div>
+  <p class="inline-status" id="gdStatus" role="status" aria-live="polite"></p>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const colors = {matured:'#c9ed76', old:'#ffbe68', young:'#75d7b0'};
+  let images = [], index = 0, requestVersion = 0;
+  function show() {
+    const item = images[index];
+    $('gdPrev').disabled = !item || index === 0;
+    $('gdNext').disabled = !item || index >= images.length - 1;
+    $('gdPosition').textContent = item ? `${index + 1} / ${images.length}` : '0 images';
+    $('gdBoxes').replaceChildren(); $('gdOverlay').replaceChildren();
+    $('gdImageWrap').hidden = true; $('gdEmpty').hidden = false;
+    $('gdImage').removeAttribute('src');
+    if (!item) {
+      $('gdEmpty').textContent = 'No images match these filters.';
+      $('gdFilename').textContent = 'No matching images'; $('gdImageMeta').textContent = '';
+      return;
+    }
+    $('gdEmpty').textContent = 'Loading image…';
+    $('gdFilename').textContent = item.filename;
+    $('gdImageMeta').textContent = `${item.split === 'valid' ? 'Validation' : item.split === 'train' ? 'Training' : 'Test'} split · ${item.objects.length} annotated objects`;
+    $('gdImage').alt = `Bamboo dataset image: ${item.filename}`;
+    $('gdImage').onload = () => { if (images[index] !== item) return; $('gdEmpty').hidden = true; $('gdImageWrap').hidden = false; };
+    $('gdImage').onerror = () => { if (images[index] !== item) return; $('gdImageWrap').hidden = true; $('gdEmpty').hidden = false; $('gdEmpty').textContent = 'Image unavailable. Choose another image or refresh.'; };
+    $('gdImage').src = `/api/growth-dataset/image/${item.split}/${encodeURIComponent(item.filename)}`;
+    for (const [n, box] of item.objects.entries()) {
+      const row = document.createElement('div'); row.className = 'gd-box-row';
+      const name = document.createElement('strong'); name.textContent = box.class_name.charAt(0).toUpperCase() + box.class_name.slice(1);
+      const label = document.createElement('span'); label.textContent = `Object ${n + 1} · Class ${box.class_id}`;
+      row.append(name, label); $('gdBoxes').append(row);
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      const x1=Math.max(0,box.x_center-box.width/2), y1=Math.max(0,box.y_center-box.height/2);
+      const x2=Math.min(1,box.x_center+box.width/2), y2=Math.min(1,box.y_center+box.height/2);
+      Object.entries({x:x1*1000,y:y1*1000,width:(x2-x1)*1000,height:(y2-y1)*1000,fill:'none',stroke:colors[box.class_name],'stroke-width':3,'vector-effect':'non-scaling-stroke'}).forEach(([key,value])=>rect.setAttribute(key,value));
+      $('gdOverlay').append(rect);
+    }
+    if (item.annotation_status !== 'annotated') {
+      const note = document.createElement('p'); note.className = 'note';
+      note.textContent = item.annotation_status === 'no_objects' ? 'This image has an empty YOLO label file.' : 'This image has missing or invalid annotations. Check the source label file.';
+      $('gdBoxes').append(note);
+    }
+  }
+  async function load() {
+    const version = ++requestVersion;
+    $('gdStatus').textContent = 'Reading local YOLO annotations…';
+    images = []; index = 0; show();
+    try {
+      const query = new URLSearchParams({split:$('gdSplit').value,stage:$('gdStage').value});
+      const response = await fetch('/api/growth-dataset/images?' + query, {cache:'no-store'});
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
+      const data = await response.json(); if (version !== requestVersion) return;
+      images = data.images; index = 0;
+      $('gdTotal').textContent = data.total_images; $('gdObjects').textContent = data.object_count;
+      for (const key of ['matured','old','young']) $('gd'+key.charAt(0).toUpperCase()+key.slice(1)).textContent = data.counts[key];
+      $('gdDataset').textContent = data.dataset;
+      $('gdStatus').textContent = !data.available ? 'Growth dataset not found in this installation.' : `${data.splits.train} training · ${data.splits.valid} validation · ${data.splits.test} test images${data.needs_review ? ` · ${data.needs_review} need annotation review` : ''}`;
+      show();
+    } catch (error) {
+      if (version !== requestVersion) return;
+      images=[]; show(); $('gdEmpty').textContent='Could not load the dataset.';
+      $('gdStatus').textContent = error.message;
+    }
+  }
+  $('gdPrev').addEventListener('click',()=>{index--;show();});
+  $('gdNext').addEventListener('click',()=>{index++;show();});
+  $('gdSplit').addEventListener('change',load); $('gdStage').addEventListener('change',load);
+  load();
+})();
+</script>
+{% endblock %}

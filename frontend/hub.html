@@ -1,0 +1,210 @@
+
+{% extends "base.html" %}
+
+{% block title %}Mission Hub{% endblock %}
+{% block body_class %}fl-hub-page{% endblock %}
+{% block main_navigation %}{% endblock %}
+{% block topbar_link %}<a class="fl-shell-link" href="/">← Home</a>{% endblock %}
+{% block page_header %}{% endblock %}
+
+{% block content %}
+
+<div class="fl-hub">
+
+  <section class="fl-hub-hero" aria-labelledby="hubTitle">
+    <div class="fl-hub-hero-content">
+      
+
+      <h1 id="hubTitle">Mission Hub</h1>
+
+      <p>
+        Choose your next activity, scan a bamboo sample,
+        or inspect the discoveries saved in your field journal.
+      </p>
+
+
+    </div>
+
+    <div class="fl-radar-art" aria-hidden="true">
+      <div class="fl-radar-ring fl-radar-ring-one"></div>
+      <div class="fl-radar-ring fl-radar-ring-two"></div>
+      <div class="fl-radar-ring fl-radar-ring-three"></div>
+      <div class="fl-radar-cross"></div>
+      <div class="fl-radar-core">
+        <svg viewBox="0 0 24 24"
+             fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round"
+             stroke-linejoin="round">
+          <use href="#i-leaf"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <div class="fl-hub-heading">
+    <div>
+      
+      <h2>Choose your mission</h2>
+    </div>
+
+    <span class="fl-hub-label">
+      FIELD LAB / LOCAL WORKSPACE
+    </span>
+  </div>
+
+  <section class="fl-missions"
+           aria-label="BambooX field missions">
+
+    <a href="/app/inspection"
+       class="fl-mission-card fl-mission-primary">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">01 / IMAGE ANALYSIS</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-scan"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>Image Scanner</h3>
+        <p>
+          Recognize species or detect growth stages
+          from a bamboo photograph.
+        </p>
+      </div>
+
+      
+    </a>
+
+    <a href="/app/camera"
+       class="fl-mission-card fl-mission-camera">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">02 / CAMERA STATION</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-camera"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>Live Camera</h3>
+        <p>
+          Preview your camera and capture
+          a bamboo sample for inspection.
+        </p>
+      </div>
+
+      
+    </a>
+
+    <a href="/app" class="fl-mission-card">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">03 / ANALYTICS</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol fl-symbol-amber">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-grid"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>Mission Analytics</h3>
+        <p>
+          Review inspection totals,
+          species distribution, and model details.
+        </p>
+      </div>
+
+      
+    </a>
+
+    <a href="/app/records" class="fl-mission-card">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">04 / JOURNAL</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol fl-symbol-amber">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-list"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>Field Journal</h3>
+        <p>
+          Explore saved bamboo inspections,
+          review AI results, and print reports.
+        </p>
+      </div>
+
+      
+    </a>
+
+    <a href="/app/labeling" class="fl-mission-card">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">05 / DATA LAB</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-tag"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>Growth Dataset</h3>
+        <p>
+          Explore Matured, Old, and Young annotations
+          in the YOLO training dataset.
+        </p>
+      </div>
+
+      
+    </a>
+
+    <a href="/app/settings" class="fl-mission-card">
+
+      <div class="fl-mission-top">
+        <span class="fl-mission-number">06 / SYSTEM</span>
+        <span class="fl-mission-arrow" aria-hidden="true">↗</span>
+      </div>
+
+      <div class="fl-mission-symbol">
+        <svg class="icon" aria-hidden="true">
+          <use href="#i-settings"/>
+        </svg>
+      </div>
+
+      <div>
+        <h3>System Control</h3>
+        <p>
+          Check local storage, model information,
+          appearance, and system settings.
+        </p>
+      </div>
+
+      
+    </a>
+
+  </section>
+
+<footer class="fl-hub-footer"><span>BambooX Field Lab · Local workspace</span><span>Choose a mission to begin ↗</span></footer>
+
+</div>
+
+{% endblock %}

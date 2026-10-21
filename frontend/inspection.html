@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block title %}Image Scanner{% endblock %}
+{% block body_class %}fl-inspection-page{% endblock %}
+{% block breadcrumb %}IMAGE SCANNER{% endblock %}
+{% block page_title %}Image Scanner{% endblock %}
+{% block page_subtitle %}Add your sample details, then choose a growth-stage scan or species recognition.{% endblock %}
+{% block header_action %}<span class="quiet-chip">Local AI · Two scan modes</span>{% endblock %}
+{% block content %}
+
+
+  <section class="panel inspection-panel fl-sample-panel" aria-labelledby="sampleHeading">
+    <div class="panel-heading"><span class="panel-step">01</span><div><h2 id="sampleHeading">Sample information</h2><p class="note">Fields marked * are required.</p></div></div>
+<div class="fl-sample-fields">
+<div class="fl-sample-field">
+    <label for="sampleId">Sample ID <span class="required-mark">*</span></label>
+    <div class="input-caption"><input id="sampleId" type="text" maxlength="80" autocomplete="off" placeholder="Loading next ID..." required aria-describedby="sampleHint sampleError"><button id="suggestBtn" type="button" class="secondary small-btn" title="Suggest a Sample ID">Suggest ID</button></div>
+    <div class="field-help" id="sampleHint">Suggested from saved IDs; not reserved until you save.</div>
+    <div class="field-error" id="sampleError" role="alert" hidden></div>
+</div>
+<div class="fl-sample-field">
+    <label for="species">Known bamboo species <span class="optional">Optional</span></label>
+    <input id="species" maxlength="100" placeholder="e.g. Hedge (if known)">
+</div>
+<div class="fl-sample-field">
+    <label for="origin">Origin / location</label>
+    <input id="origin" maxlength="250" placeholder="e.g. Quezon City">
+</div>
+<div class="fl-sample-field">
+    <label for="notes">Inspector notes</label>
+    <textarea id="notes" maxlength="2000" rows="2" placeholder="Appearance, source, observations..."></textarea>
+</div>
+</div>
+    <p class="field-help">Sample ID, origin, and notes are saved with species inspections. Growth detections are preview-only.</p>
+  </section>
+<div class="fl-scanner-tabs" role="tablist" aria-label="Scanner mode">
+  <button type="button" id="growthTab" role="tab" aria-selected="true" aria-controls="growthMode">Growth stages <span>YOLO · Matured / Old / Young</span></button>
+  <button type="button" id="speciesTab" role="tab" aria-selected="false" aria-controls="speciesMode" tabindex="-1">Species recognition <span>MobileNetV3 · Save inspection</span></button>
+</div>
+<section id="speciesMode" role="tabpanel" aria-labelledby="speciesTab" hidden>
+<ol class="inspection-stepper" id="inspectionStepper" aria-label="Inspection progress">
+  <li class="is-current" data-step="1"><span class="step-number">1</span><span><strong>Sample info</strong><small>Identify your sample</small></span></li>
+  <li data-step="2"><span class="step-number">2</span><span><strong>Validate image</strong><small>JPG, PNG, WEBP</small></span></li>
+  <li data-step="3"><span class="step-number">3</span><span><strong>AI prediction</strong><small>Species recognition</small></span></li>
+  <li data-step="4"><span class="step-number">4</span><span><strong>Save record</strong><small>Local SQLite</small></span></li>
+</ol>
+<div class="inspection-panels fl-species-upload">
+
+
+  <section class="panel inspection-panel" aria-labelledby="imageHeading">
+    <div class="panel-heading"><span class="panel-step">02</span><div><h2 id="imageHeading">Upload &amp; validate</h2><p class="note">Image is validated before AI prediction.</p></div></div>
+    <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Choose a bamboo image or drag and drop one here" aria-describedby="uploadHint">
+      <div class="drop-icon" aria-hidden="true">↥</div>
+      <strong>Drop a bamboo photo here</strong>
+      <span>or click to browse local files</span>
+      <span class="file-criteria" id="uploadHint">JPG · PNG · WEBP · Maximum 10 MB</span>
+    </div>
+    <input id="imageInput" class="visually-hidden" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" aria-label="Select bamboo image">
+    <div class="chosen-file" id="chosenFile" hidden>
+      <img id="preview" alt="Selected bamboo inspection photo preview" hidden>
+      <div class="file-meta"><strong id="fileName"></strong><small id="fileSize"></small></div>
+      <button type="button" id="removeImageBtn" class="secondary small-btn">Remove</button>
+    </div>
+    <p class="field-error" id="fileError" role="alert" hidden></p>
+    <button id="validateBtn" type="button" class="secondary action-wide" disabled>Validate image <span class="button-spinner" aria-hidden="true"></span></button>
+    <p id="apiStatus" class="inline-status" role="status" aria-live="polite">Enter a Sample ID and choose an image.</p>
+  </section>
+</div>
+
+<div class="inspection-panels inspection-bottom">
+  <section class="panel inspection-panel" aria-labelledby="aiHeading">
+    <div class="panel-heading"><span class="panel-step">03</span><div><h2 id="aiHeading">AI species prediction</h2><p class="note">Only available after successful image validation.</p></div></div>
+    <button id="predictBtn" type="button" class="action-wide" disabled>Run species recognition <span class="button-spinner" aria-hidden="true"></span></button>
+    <p id="predictStatus" class="inline-status" role="status" aria-live="polite">Validate the image to continue.</p>
+    <div class="prediction-card" id="predictionResult" hidden>
+      <span class="result-overline">MOBILENETV3-SMALL / SPECIES DEMO</span>
+      <div class="prediction-header"><div><span class="result-muted">Predicted species</span><strong id="predictedSpecies">—</strong></div><span id="confidenceBadge" class="confidence-badge">—</span></div>
+      <div class="progress-track confidence-track"><span id="confidenceFill"></span></div>
+      <div class="confidence-caption"><span>Model confidence</span><strong id="speciesConfidence">—</strong></div>
+      <div class="result-time">Inference time: <strong id="speciesInferenceTime">—</strong></div>
+      <p id="lowConfidenceWarning" class="caution-text" hidden>Low confidence (under 70%). Review manually before relying on this prediction.</p>
+      <div class="result-top"><strong>Top predictions</strong><ol id="topThree"></ol></div>
+      <p class="note">Confidence reflects the model prediction. Review uncertain species results manually.</p>
+    </div>
+  </section>
+  <section class="panel inspection-panel" aria-labelledby="saveHeading">
+    <div class="panel-heading"><span class="panel-step">04</span><div><h2 id="saveHeading">Save inspection</h2><p class="note">Stores metadata and the image in your local BambooX workspace.</p></div></div>
+    <div class="save-readiness" id="saveReadiness"><span class="readiness-circle" aria-hidden="true">○</span><div><strong>Awaiting prediction</strong><small>Run AI recognition before saving this record.</small></div></div>
+    <button id="saveBtn" type="button" class="action-wide" disabled>Save to SQLite <span class="button-spinner" aria-hidden="true"></span></button>
+    <p id="saveStatus" class="inline-status" role="status" aria-live="polite">Not saved yet.</p>
+    <div id="savedActions" class="saved-actions" hidden><a class="btn" href="/app/records">View inspection records →</a><button class="secondary" id="newSampleBtn" type="button">Start another sample</button></div>
+    <div class="safe-note"><strong>Local-first:</strong> Images stay local. The journal stores species predictions together with sample details and origin.</div>
+  </section>
+</div>
+</section>
+<section id="growthMode" role="tabpanel" aria-labelledby="growthTab">
+{% include "growth_scanner_panel.html" %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const MAX_SIZE = 10 * 1024 * 1024;
+  const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+  let selectedFile = null;
+  let previewUrl = null;
+  let validated = false;
+  let predicted = false;
+  let saved = false;
+  let busy = false;
+  let sampleIdEdited = false;
+
+  function msg(id, text, type = "") {
+    const node = $(id);
+    node.textContent = text;
+    node.className = "inline-status" + (type ? " is-" + type : "");
+  }
+  function fieldError(id, text) { $(id).textContent = text; $(id).hidden = !text; }
+  function validId() {
+    const value = $("sampleId").value.trim();
+    return value.length > 0 && value.length <= 80;
+  }
+  function currentStep() { return saved ? 5 : predicted ? 4 : validated ? 3 : validId() ? 2 : 1; }
+  function updateUI() {
+    const step = currentStep();
+    document.querySelectorAll("#inspectionStepper li").forEach(li => {
+      const n = Number(li.dataset.step);
+      li.classList.toggle("is-current", n === Math.min(step, 4) && !saved);
+      li.classList.toggle("is-done", n < step || (saved && n === 4));
+      if (n === Math.min(step, 4) && !saved) li.setAttribute("aria-current", "step");
+      else li.removeAttribute("aria-current");
+    });
+    $("validateBtn").disabled = busy || saved || !selectedFile || !validId();
+    $("predictBtn").disabled = busy || saved || !validated;
+    $("saveBtn").disabled = busy || saved || !predicted;
+    for (const id of ["sampleId", "species", "origin", "notes", "imageInput", "suggestBtn", "removeImageBtn", "newSampleBtn"]) {
+      $(id).disabled = busy || (saved && id !== "newSampleBtn");
+    }
+    $("dropZone").setAttribute("aria-disabled", String(busy));
+    $("saveReadiness").classList.toggle("is-ready", predicted || saved);
+    $("saveReadiness").querySelector("strong").textContent = saved ? "Saved successfully" : predicted ? "Ready to save" : "Awaiting prediction";
+    $("saveReadiness").querySelector("small").textContent = saved ? "Record stored in local SQLite." : predicted ? "Your prediction is ready for storage." : "Run AI recognition before saving this record.";
+    $("saveReadiness").querySelector(".readiness-circle").textContent = predicted || saved ? "✓" : "○";
+  }
+  function setBusy(value, actionId = null) {
+    busy = value;
+    ["validateBtn", "predictBtn", "saveBtn"].forEach(id => $(id).classList.toggle("is-loading", value && id === actionId));
+    updateUI();
+  }
+  function invalidate() {
+    validated = false;
+    predicted = false;
+    saved = false;
+    $("predictionResult").hidden = true;
+    $("savedActions").hidden = true;
+    msg("predictStatus", "Validate the image to continue.");
+    msg("saveStatus", "Not saved yet.");
+    updateUI();
+  }
+  function validateInputs() {
+    fieldError("sampleError", "");
+    fieldError("fileError", "");
+    if (!validId()) {
+      fieldError("sampleError", "Enter a valid Sample ID (1–80 characters).");
+      $("sampleId").setAttribute("aria-invalid", "true");
+      $("sampleId").focus();
+      throw new Error("Sample ID is required.");
+    }
+    $("sampleId").removeAttribute("aria-invalid");
+    if (!selectedFile) {
+      fieldError("fileError", "Select a bamboo image first.");
+      throw new Error("Choose an image first.");
+    }
+    if (!ALLOWED.includes(selectedFile.type) || selectedFile.size === 0 || selectedFile.size > MAX_SIZE) {
+      fieldError("fileError", "Only JPG, PNG or WEBP images up to 10 MB are accepted.");
+      throw new Error("Invalid image format or size.");
+    }
+    return true;
+  }
+  function buildForm() {
+    validateInputs();
+    const form = new FormData();
+    form.append("file", selectedFile, selectedFile.name);
+    form.append("sample_id", $("sampleId").value.trim());
+    form.append("species", $("species").value.trim());
+    form.append("origin", $("origin").value.trim());
+    form.append("notes", $("notes").value.trim());
+    return form;
+  }
+  async function post(url, form) {
+    const res = await fetch(url, { method: "POST", body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Request failed (HTTP " + res.status + ").");
+    return data;
+  }
+  function fileSize(size) { return (size / 1024 / 1024).toFixed(2) + " MB"; }
+  function chooseFile(file) {
+    if (busy || saved) return;
+    invalidate();
+    fieldError("fileError", "");
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    $("preview").hidden = true;
+    $("preview").removeAttribute("src");
+    selectedFile = null;
+    $("chosenFile").hidden = true;
+    if (!file) { updateUI(); return; }
+    if (!ALLOWED.includes(file.type) || file.size === 0 || file.size > MAX_SIZE) {
+      fieldError("fileError", "Invalid image. Use a JPG/PNG/WEBP file under 10 MB.");
+      msg("apiStatus", "Image selection failed.", "error");
+      updateUI(); return;
+    }
+    selectedFile = file;
+    $("fileName").textContent = file.name;
+    $("fileSize").textContent = fileSize(file.size);
+    $("chosenFile").hidden = false;
+    previewUrl = URL.createObjectURL(file);
+    $("preview").onload = () => { $("preview").hidden = false; };
+    $("preview").onerror = () => {
+      fieldError("fileError", "Unable to display this image. Select another photo.");
+      selectedFile = null;
+      $("chosenFile").hidden = true;
+      invalidate();
+    };
+    $("preview").src = previewUrl;
+    msg("apiStatus", "Image selected. Click Validate image.");
+    updateUI();
+  }
+  $("dropZone").addEventListener("click", () => { if (!busy && !saved) $("imageInput").click(); });
+  $("dropZone").addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!busy && !saved) $("imageInput").click(); }
+  });
+  $("imageInput").addEventListener("change", e => chooseFile(e.target.files[0]));
+  $("dropZone").addEventListener("dragover", e => { e.preventDefault(); if (!busy) $("dropZone").classList.add("is-dragover"); });
+  $("dropZone").addEventListener("dragleave", () => $("dropZone").classList.remove("is-dragover"));
+  $("dropZone").addEventListener("drop", e => {
+    e.preventDefault(); $("dropZone").classList.remove("is-dragover");
+    if (!busy && !saved) chooseFile(e.dataTransfer.files[0]);
+  });
+  $("removeImageBtn").addEventListener("click", () => { $("imageInput").value = ""; chooseFile(null); msg("apiStatus", "Choose an image to continue."); });
+  $("sampleId").addEventListener("input", () => {
+    sampleIdEdited = true;
+    fieldError("sampleError", ""); $("sampleId").removeAttribute("aria-invalid");
+    if (!busy && !saved) invalidate();
+  });
+  ["species", "origin", "notes"].forEach(id => $(id).addEventListener("input", () => { if (!busy && !saved) invalidate(); }));
+
+  async function suggestId(force = false) {
+    try {
+      const res = await fetch("/api/inspections/next-id", { cache: "no-store" });
+      if (!res.ok) throw new Error("Could not load suggestion");
+      const data = await res.json();
+      if (force || !sampleIdEdited && !$("sampleId").value.trim()) {
+        $("sampleId").value = data.suggested_id;
+        $("sampleId").removeAttribute("aria-invalid");
+        fieldError("sampleError", "");
+        if (force) { sampleIdEdited = true; invalidate(); }
+        updateUI();
+      }
+    } catch (e) { if (force) window.bambooxToast?.("ID suggestion unavailable. Enter an ID manually.", "error"); }
+  }
+  $("suggestBtn").addEventListener("click", () => suggestId(true));
+
+  $("validateBtn").addEventListener("click", async () => {
+    if (busy || saved) return;
+    let form;
+    try { form = buildForm(); } catch (e) { msg("apiStatus", e.message, "error"); return; }
+    invalidate(); setBusy(true, "validateBtn"); msg("apiStatus", "Validating file content…", "working");
+    try {
+      const data = await post("/api/upload-image", form);
+      validated = true;
+      msg("apiStatus", "Validated: " + data.image_format + " · " + data.image_width + " × " + data.image_height + " · Not yet saved", "success");
+      window.bambooxToast?.("Image validation passed.");
+    } catch (e) { msg("apiStatus", e.message, "error"); window.bambooxToast?.(e.message, "error"); }
+    finally { setBusy(false); }
+  });
+  $("predictBtn").addEventListener("click", async () => {
+    if (busy || saved || !validated) return;
+    let form;
+    try { form = buildForm(); } catch (e) { msg("predictStatus", e.message, "error"); return; }
+    setBusy(true, "predictBtn"); msg("predictStatus", "MobileNetV3 is analyzing the image…", "working");
+    try {
+      const data = await post("/api/predict-species", form);
+      predicted = true;
+      const conf = Number(data.confidence_percent);
+      $("predictedSpecies").textContent = data.predicted_species || "Unknown";
+      $("speciesConfidence").textContent = Number.isFinite(conf) ? conf.toFixed(2) + "%" : "—";
+      $("speciesInferenceTime").textContent = data.inference_time_ms + " ms";
+      const badge = $("confidenceBadge");
+      badge.textContent = Number.isFinite(conf) ? conf.toFixed(2) + "%" : "—";
+      badge.className = "confidence-badge " + (conf >= 85 ? "confidence-high" : conf >= 70 ? "confidence-medium" : "confidence-low");
+      $("confidenceFill").style.width = (Number.isFinite(conf) ? Math.min(100, Math.max(0, conf)) : 0) + "%";
+      $("lowConfidenceWarning").hidden = !(conf < 70);
+      const list = $("topThree"); list.replaceChildren();
+      (data.top_predictions || []).forEach(item => {
+        const li = document.createElement("li"); li.textContent = item.species + " — " + item.confidence_percent + "%"; list.append(li);
+      });
+      $("predictionResult").hidden = false;
+      msg("predictStatus", "Prediction complete. Review the result before saving.", "success");
+      window.bambooxToast?.("Species prediction ready.");
+    } catch (e) { predicted = false; msg("predictStatus", e.message, "error"); window.bambooxToast?.(e.message, "error"); }
+    finally { setBusy(false); }
+  });
+  $("saveBtn").addEventListener("click", async () => {
+    if (busy || saved || !predicted) return;
+    let form;
+    try { form = buildForm(); } catch (e) { msg("saveStatus", e.message, "error"); return; }
+    setBusy(true, "saveBtn"); msg("saveStatus", "Saving the image and inspection to SQLite…", "working");
+    try {
+      // The backend re-runs prediction before writing; browser values aren't trusted.
+      const data = await post("/api/inspections", form);
+      saved = true;
+      $("savedActions").hidden = false;
+      msg("saveStatus", "Saved record #" + data.inspection_id + " · " + data.sample_id + " · " + data.predicted_species, "success");
+      window.bambooxToast?.("Inspection saved to SQLite.");
+    } catch (e) { msg("saveStatus", e.message, "error"); window.bambooxToast?.(e.message, "error"); }
+    finally { setBusy(false); }
+  });
+  $("newSampleBtn").addEventListener("click", () => {
+    if (busy) return;
+    selectedFile = null; saved = false;
+    $("imageInput").value = "";
+    ["sampleId", "species", "origin", "notes"].forEach(id => $(id).value = "");
+    $("chosenFile").hidden = true;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    $("preview").removeAttribute("src"); $("preview").hidden = true;
+    sampleIdEdited = false;
+    invalidate();
+    msg("apiStatus", "Enter sample details and choose an image.");
+    suggestId();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  window.addEventListener("pagehide", () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
+  updateUI(); suggestId();
+})();
+</script>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('.fl-scanner-tabs [role="tab"]')];
+  function activate(tab, focus = false) {
+    tabs.forEach(item => {
+      const selected = item === tab;
+      item.setAttribute('aria-selected', String(selected));
+      item.tabIndex = selected ? 0 : -1;
+      document.getElementById(item.getAttribute('aria-controls')).hidden = !selected;
+    });
+    if (focus) tab.focus();
+  }
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(tab));
+    tab.addEventListener('keydown', event => {
+      let next;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') next = tabs[(index + 1) % tabs.length];
+      if (event.key === 'Home') next = tabs[0];
+      if (event.key === 'End') next = tabs[tabs.length - 1];
+      if (next) { event.preventDefault(); activate(next, true); }
+    });
+  });
+  activate(document.getElementById(location.hash === '#species' ? 'speciesTab' : 'growthTab'));
+})();
+</script>
+{% endblock %}

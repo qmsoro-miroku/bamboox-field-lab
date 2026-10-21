@@ -1,0 +1,1374 @@
+
+{% extends "base.html" %}
+{% block title %}Inspection Records{% endblock %}
+{% block breadcrumb %}RECORDS{% endblock %}
+{% block page_title %}Inspection Records{% endblock %}
+{% block page_subtitle %}Find, review, export, or remove saved local species inspections.{% endblock %}
+{% block header_action %}
+<a href="/app/inspection" class="btn">
+  <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>
+  New Inspection
+</a>
+{% endblock %}
+
+{% block content %}
+<style>
+/* BambooX printable inspection report */
+#recordsWorkspace[hidden],
+#reportPreview[hidden],
+[hidden] { display: none !important; }
+
+.report-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.report-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.report-paper {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 38px;
+  background: #fff;
+  color: #203c2e;
+  border: 1px solid #dce6de;
+  border-radius: 16px;
+  box-shadow: 0 12px 42px rgba(17,59,39,.06);
+}
+
+.report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #20523a;
+}
+
+.report-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-brandmark {
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  background: #174d35;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.report-brand strong {
+  display: block;
+  font-size: 22px;
+  letter-spacing: -.5px;
+}
+
+.report-brand small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: #597766;
+}
+
+.report-ref {
+  text-align: right;
+  font-size: 12px;
+  color: #5b7264;
+}
+
+.report-ref strong {
+  display: block;
+  font-size: 14px;
+  color: #203c2e;
+  margin-top: 4px;
+}
+
+.report-kicker {
+  margin: 28px 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: #3b7453;
+}
+
+.report-title {
+  margin: 0;
+  color: #1d392a;
+  font-size: 31px;
+  letter-spacing: -.8px;
+}
+
+.report-intro {
+  margin: 8px 0 24px;
+  font-size: 13px;
+  color: #67776d;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: .9fr 1.1fr;
+  gap: 24px;
+}
+
+.report-photo {
+  min-height: 250px;
+  max-height: 295px;
+  padding: 10px;
+  background: #f4f7f3;
+  border: 1px solid #e1e8df;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-photo img {
+  max-width: 100%;
+  max-height: 270px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+.report-photo-missing {
+  color: #728379;
+  font-size: 13px;
+  text-align: center;
+}
+
+.report-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 12px;
+  align-content: start;
+}
+
+.report-field-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  font-weight: 750;
+  color: #698071;
+  margin-bottom: 6px;
+}
+
+.report-field-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.report-section-title {
+  margin: 26px 0 14px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.report-model-box {
+  padding: 20px;
+  border: 1px solid #e0e8df;
+  border-radius: 12px;
+  background: #f8faf7;
+}
+
+.report-prediction-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.report-prediction {
+  font-size: 25px;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.report-confidence {
+  text-align: right;
+  font-size: 22px;
+  font-weight: 800;
+  color: #23764d;
+}
+
+.report-confidence.medium { color: #a77116; }
+.report-confidence.low { color: #b23e3e; }
+
+.report-meter {
+  height: 9px;
+  overflow: hidden;
+  margin: 15px 0 10px;
+  border-radius: 99px;
+  background: #e5eae5;
+}
+
+.report-meter > div {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: #278052;
+}
+
+.report-meter > div.medium { background: #b88824; }
+.report-meter > div.low { background: #bf4b47; }
+
+.report-low-warning {
+  margin: 12px 0 0;
+  border-left: 3px solid #b9871c;
+  padding: 8px 12px;
+  background: #fff8e8;
+  color: #7a5619;
+  font-weight: 650;
+  font-size: 12px;
+}
+
+.report-model-foot {
+  margin-top: 11px;
+  font-size: 12px;
+  color: #67776d;
+}
+
+.report-notes {
+  padding: 15px 17px;
+  border: 1px solid #e0e8df;
+  border-radius: 10px;
+  min-height: 54px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+  background: #fff;
+}
+
+.report-disclaimer {
+  padding: 14px 16px;
+  margin-top: 24px;
+  border-left: 4px solid #28764c;
+  background: #eef5ef;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #31513d;
+}
+
+.report-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #d9e4da;
+  padding-top: 14px;
+  margin-top: 23px;
+  font-size: 11px;
+  color: #718074;
+}
+
+@media (max-width: 740px) {
+  .report-paper { padding: 22px; }
+  .report-grid { grid-template-columns: 1fr; }
+  .report-photo { min-height: 210px; }
+  .report-title { font-size: 24px; }
+}
+
+@page {
+  size: A4;
+  margin: 13mm;
+}
+
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #203c2e !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .sidebar,
+  .sidebar-overlay,
+  .mobile-bar,
+  .page-header,
+  .toast-region,
+  #detailsDialog,
+  #deleteDialog,
+  .report-toolbar {
+    display: none !important;
+  }
+
+  .app-shell,
+  .main-area,
+  .page-content {
+    display: block !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-content > :not(#reportPreview) {
+    display: none !important;
+  }
+
+  #reportPreview {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .report-paper {
+    border: 0;
+    box-shadow: none;
+    border-radius: 0;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-grid,
+  .report-model-box,
+  .report-notes,
+  .report-disclaimer {
+    break-inside: avoid;
+  }
+
+  .report-grid {
+    grid-template-columns: .9fr 1.1fr;
+  }
+
+  .report-photo { max-height: 265px; }
+  .report-photo img { max-height: 245px; }
+  .report-title { font-size: 27px; }
+}
+
+/* BambooX A4 print refinements */
+@media print {
+  .skip-link,
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    display: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  .report-paper {
+    font-size: 11px !important;
+  }
+
+  .report-top {
+    padding-bottom: 12px !important;
+  }
+
+  .report-kicker {
+    margin: 12px 0 4px !important;
+  }
+
+  .report-title {
+    font-size: 24px !important;
+  }
+
+  .report-intro {
+    margin: 5px 0 13px !important;
+  }
+
+  .report-grid {
+    gap: 14px !important;
+  }
+
+  .report-photo {
+    min-height: 0 !important;
+    max-height: 210px !important;
+    padding: 6px !important;
+  }
+
+  .report-photo img {
+    max-height: 198px !important;
+  }
+
+  .report-meta {
+    gap: 9px !important;
+  }
+
+  .report-section-title {
+    margin: 14px 0 8px !important;
+  }
+
+  .report-model-box {
+    padding: 13px !important;
+  }
+
+  .report-notes {
+    min-height: 0 !important;
+    padding: 10px 12px !important;
+  }
+
+  .report-disclaimer {
+    margin-top: 13px !important;
+    padding: 10px 12px !important;
+  }
+
+
+
+  .report-bottom {
+    margin-top: 12px !important;
+    padding-top: 9px !important;
+  }
+}
+</style>
+
+<section class="panel records-workspace" id="recordsWorkspace">
+  <div class="section-heading record-heading">
+    <div>
+      <h2>Inspection library</h2>
+      <p class="note">
+        Local records saved by BambooX · Species predictions only
+      </p>
+    </div>
+    <span id="recordTotal" class="quiet-chip">Loading…</span>
+  </div>
+
+  <div class="records-toolbar">
+    <div class="search-field">
+      <label for="searchInput" class="visually-hidden">
+        Search records
+      </label>
+      <span aria-hidden="true">⌕</span>
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search Sample ID, species, location…"
+        autocomplete="off"
+      >
+    </div>
+
+    <div>
+      <label for="speciesFilter" class="visually-hidden">
+        Filter by species
+      </label>
+      <select id="speciesFilter" aria-label="Filter by species">
+        <option value="">All species</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="sortSelect" class="visually-hidden">
+        Sort records
+      </label>
+      <select id="sortSelect" aria-label="Sort records">
+        <option value="date_desc">Newest first</option>
+        <option value="date_asc">Oldest first</option>
+        <option value="confidence_desc">Highest confidence</option>
+        <option value="confidence_asc">Lowest confidence</option>
+      </select>
+    </div>
+
+    <button id="refreshBtn" class="secondary" type="button">
+      ↻ Refresh
+    </button>
+
+    <button id="exportBtn" class="secondary" type="button">
+      ↓ Export CSV
+    </button>
+  </div>
+
+  <p id="recordsStatus" class="inline-status" role="status"
+     aria-live="polite">
+    Loading inspection records…
+  </p>
+
+  <div class="table-container records-table-wrap" id="recordsTableWrap">
+    <table class="records-table">
+      <thead>
+        <tr>
+          <th>Sample</th>
+          <th>Predicted species</th>
+          <th>Confidence</th>
+          <th>Location</th>
+          <th>Saved (UTC)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="recordsTable">
+        <tr><td colspan="6">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="recordEmpty" class="records-empty" hidden>
+    <div class="empty-illustration" aria-hidden="true">
+      <svg viewBox="0 0 96 96" fill="none" width="90" height="90">
+        <rect x="22" y="13" width="52" height="70" rx="10"
+              stroke="currentColor" stroke-width="3"/>
+        <rect x="33" y="28" width="30" height="23" rx="4"
+              fill="currentColor" opacity=".1"/>
+        <path d="M32 62h32m-32 10h23"
+              stroke="currentColor" stroke-width="3"
+              stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h3 id="emptyTitle">No inspections yet</h3>
+    <p id="emptyDescription">
+      Start a new inspection to create the first saved record.
+    </p>
+    <a href="/app/inspection" class="btn">+ New Inspection</a>
+  </div>
+
+  <div class="records-footer">
+    <p id="recordsRange" class="note">—</p>
+    <div class="pager">
+      <button id="prevBtn" class="secondary" type="button" disabled>
+        ← Previous
+      </button>
+      <span id="pageLabel" aria-live="polite">Page 1</span>
+      <button id="nextBtn" class="secondary" type="button" disabled>
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <div class="safe-note">
+    Confidence reflects the species-recognition model's output.
+    <strong>Review uncertain species predictions manually.</strong>
+    Deleting a record also deletes its locally stored image when available.
+  </div>
+</section>
+
+<section id="reportPreview" hidden
+         aria-label="Printable inspection report">
+
+  <div class="report-toolbar">
+    <button type="button" id="backToRecords" class="secondary">
+      ← Back to Records
+    </button>
+    <div class="report-toolbar-actions">
+      <span class="note">
+        Choose Save as PDF in the browser print dialog.
+      </span>
+      <button type="button" id="printReportBtn" class="btn" disabled>
+        Print / Save as PDF
+      </button>
+    </div>
+  </div>
+
+  <article class="report-paper" id="printableReport">
+    <div class="report-top">
+      <div class="report-brand">
+        <div class="report-brandmark" aria-hidden="true"><svg class="icon"><use href="#i-leaf"/></svg></div>
+        <div>
+          <strong>BambooX</strong>
+          <small>AI-ASSISTED BAMBOO INSPECTION</small>
+        </div>
+      </div>
+      <div class="report-ref">
+        REPORT REFERENCE
+        <strong id="reportReference">—</strong>
+      </div>
+    </div>
+
+    <p class="report-kicker">LOCAL INSPECTION RECORD</p>
+    <h2 class="report-title" id="reportSample">—</h2>
+    <p class="report-intro">
+      AI species-recognition result and inspector-provided information
+    </p>
+
+    <div class="report-grid">
+      <div class="report-photo">
+        <img id="reportImage" alt="Inspected bamboo sample" hidden>
+        <span id="reportImageMissing" class="report-photo-missing">
+          Photo unavailable
+        </span>
+      </div>
+
+      <div class="report-meta">
+        <div>
+          <span class="report-field-label">Record ID</span>
+          <strong class="report-field-value" id="reportId">—</strong>
+        </div>
+        <div>
+          <span class="report-field-label">Saved (UTC)</span>
+          <strong class="report-field-value" id="reportDate">—</strong>
+        </div>
+        <div>
+          <span class="report-field-label">Origin / location</span>
+          <strong class="report-field-value" id="reportOrigin">—</strong>
+        </div>
+        <div>
+          <span class="report-field-label">Provided species</span>
+          <strong class="report-field-value"
+                  id="reportProvidedSpecies">—</strong>
+        </div>
+        <div>
+          <span class="report-field-label">Original filename</span>
+          <strong class="report-field-value" id="reportFilename">—</strong>
+        </div>
+        <div>
+          <span class="report-field-label">Inference time</span>
+          <strong class="report-field-value" id="reportInference">—</strong>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="report-section-title">AI Species Recognition</h3>
+
+    <div class="report-model-box">
+      <div class="report-prediction-row">
+        <div>
+          <span class="report-field-label">Predicted species</span>
+          <div id="reportPrediction" class="report-prediction">—</div>
+        </div>
+        <div>
+          <span class="report-field-label">Model confidence</span>
+          <div id="reportConfidence" class="report-confidence">—</div>
+        </div>
+      </div>
+
+      <div id="reportMeter" class="report-meter"
+           role="meter" aria-label="Species prediction confidence"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="reportMeterFill"></div>
+      </div>
+
+      <p class="report-low-warning" id="reportWarning" hidden>
+        Low-confidence prediction (below 70%).
+        Manual verification is recommended.
+      </p>
+
+      <div class="report-model-foot">
+        Model: <strong id="reportModel">—</strong>
+        · Prediction type: Species classification
+      </div>
+    </div>
+
+    <h3 class="report-section-title">Inspector Notes</h3>
+    <div id="reportNotes" class="report-notes">—</div>
+
+    <div class="report-disclaimer">
+      <strong>Research prototype — interpretation notice.</strong>
+      This report records an AI species prediction, not a verified
+      botanical identification. Growth-stage detections are a separate scan mode.
+      Model confidence describes the prediction and requires manual review when uncertain.
+    </div>
+
+    <div class="report-bottom">
+      <span>BambooX · Locally generated inspection report</span>
+      <span id="reportGenerated">—</span>
+    </div>
+  </article>
+</section>
+
+<dialog id="detailsDialog" class="bx-dialog"
+        aria-labelledby="detailsTitle">
+  <div class="dialog-header">
+    <div>
+      <span class="eyebrow">INSPECTION DETAILS</span>
+      <h2 id="detailsTitle">Inspection</h2>
+    </div>
+    <button type="button" class="dialog-close"
+            id="closeDetails" aria-label="Close details">×</button>
+  </div>
+
+  <div class="dialog-body">
+    <div class="detail-image">
+      <img id="detailImage" alt="Stored bamboo sample" hidden>
+      <div id="missingDetailImage">Image unavailable</div>
+    </div>
+
+    <dl class="details-grid" id="detailsGrid"></dl>
+
+    <div class="detail-note">
+      <strong>Inspector notes</strong>
+      <p id="detailNotes">—</p>
+    </div>
+
+    <p class="note">
+      Species recognition only.
+      These results do not provide bamboo quality classification.
+    </p>
+  </div>
+
+  <div class="dialog-footer">
+    <button type="button" class="secondary"
+            id="closeDetailsBottom">Close</button>
+    <button type="button" class="btn"
+            id="openReportBtn">View / Print Report</button>
+  </div>
+</dialog>
+
+<dialog id="deleteDialog" class="bx-dialog bx-confirm"
+        aria-labelledby="deleteTitle">
+  <div class="dialog-header">
+    <div>
+      <span class="eyebrow danger-label">PERMANENT ACTION</span>
+      <h2 id="deleteTitle">Delete inspection?</h2>
+    </div>
+    <button type="button" class="dialog-close"
+            id="closeDelete" aria-label="Close confirmation">×</button>
+  </div>
+
+  <p id="deleteDescription">
+    This permanently removes the saved inspection and its
+    locally stored photo when available.
+  </p>
+
+  <p class="caution-text">This action cannot be undone.</p>
+
+  <div class="dialog-footer">
+    <button id="cancelDelete" type="button"
+            class="secondary">Cancel</button>
+    <button id="confirmDelete" class="btn-danger" type="button">
+      Delete permanently
+      <span class="button-spinner" aria-hidden="true"></span>
+    </button>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+"use strict";
+
+(() => {
+  const $ = id => document.getElementById(id);
+  const PAGE_SIZE = 10;
+
+  let page = 0;
+  let total = 0;
+  let records = [];
+  let busy = false;
+  let pendingDeleteId = null;
+  let activeDetails = null;
+  let requestSeq = 0;
+  let debounce;
+
+  const val = v => v == null || v === "" ? "—" : String(v);
+
+  const pct = v =>
+    v == null || !Number.isFinite(Number(v))
+      ? "—"
+      : Number(v).toFixed(2) + "%";
+
+  const confidenceClass = v =>
+    v == null
+      ? ""
+      : Number(v) >= 85
+        ? "confidence-high"
+        : Number(v) >= 70
+          ? "confidence-medium"
+          : "confidence-low";
+
+  function params(includePaging = true) {
+    const p = new URLSearchParams();
+
+    if ($("searchInput").value.trim()) {
+      p.set("q", $("searchInput").value.trim());
+    }
+
+    if ($("speciesFilter").value) {
+      p.set("species_filter", $("speciesFilter").value);
+    }
+
+    p.set("sort", $("sortSelect").value);
+
+    if (includePaging) {
+      p.set("limit", String(PAGE_SIZE));
+      p.set("offset", String(page * PAGE_SIZE));
+    }
+
+    return p;
+  }
+
+  function showStatus(message, kind = "") {
+    $("recordsStatus").textContent = message;
+    $("recordsStatus").className =
+      "inline-status" + (kind ? " is-" + kind : "");
+  }
+
+  function cell(tr, value) {
+    const td = document.createElement("td");
+    td.textContent = val(value);
+    tr.append(td);
+  }
+
+  function imageThumb(record) {
+    const wrap = document.createElement("div");
+    wrap.className = "record-thumb";
+
+    const showMissing = () => {
+      wrap.replaceChildren();
+      wrap.textContent = "—";
+      wrap.title = "No saved photo available";
+    };
+
+    if (record.image_saved && record.image_url) {
+      const img = document.createElement("img");
+      img.src = record.image_url;
+      img.loading = "lazy";
+      img.alt = "Photo of " + val(record.sample_id);
+      img.onerror = showMissing;
+      wrap.append(img);
+    } else {
+      showMissing();
+    }
+
+    return wrap;
+  }
+
+  function render() {
+    const table = $("recordsTable");
+    table.replaceChildren();
+
+    $("recordTotal").textContent =
+      total + " record" + (total === 1 ? "" : "s");
+
+    $("recordsTableWrap").hidden = records.length === 0;
+    $("recordEmpty").hidden = records.length !== 0;
+
+    if (!records.length) {
+      const noFilters =
+        !$("searchInput").value && !$("speciesFilter").value;
+
+      $("emptyTitle").textContent =
+        total === 0 && noFilters
+          ? "No inspections yet"
+          : "No matching records";
+
+      $("emptyDescription").textContent =
+        total === 0 && noFilters
+          ? "Create a new inspection to start your library."
+          : "Try a different search or species filter.";
+    }
+
+    for (const record of records) {
+      const tr = document.createElement("tr");
+
+      const first = document.createElement("td");
+      first.className = "record-id-cell";
+
+      const thumb = imageThumb(record);
+      const idWrap = document.createElement("div");
+
+      const main = document.createElement("strong");
+      main.textContent = val(record.sample_id);
+
+      const sub = document.createElement("small");
+      sub.textContent = "Record #" + record.id;
+
+      idWrap.append(main, sub);
+      first.append(thumb, idWrap);
+      tr.append(first);
+
+      const speciesTd = document.createElement("td");
+      const speciesPill = document.createElement("span");
+      speciesPill.className = "badge";
+      speciesPill.textContent = val(record.predicted_species);
+      speciesTd.append(speciesPill);
+      tr.append(speciesTd);
+
+      const confidenceTd = document.createElement("td");
+
+      const badge = document.createElement("span");
+      badge.className =
+        "confidence-badge " + confidenceClass(record.confidence_score);
+      badge.textContent = pct(record.confidence_score);
+      confidenceTd.append(badge);
+
+      if (
+        record.confidence_score != null &&
+        Number(record.confidence_score) < 70
+      ) {
+        const hint = document.createElement("small");
+        hint.className = "low-tag";
+        hint.textContent = "Low confidence";
+        confidenceTd.append(hint);
+      }
+
+      tr.append(confidenceTd);
+
+      cell(tr, record.origin);
+      cell(tr, record.inspection_date);
+
+      const actions = document.createElement("td");
+      const group = document.createElement("div");
+      group.className = "row-actions";
+
+      const view = document.createElement("button");
+      view.type = "button";
+      view.className = "secondary row-btn";
+      view.textContent = "View";
+      view.setAttribute(
+        "aria-label",
+        "View details for " + val(record.sample_id)
+      );
+      view.addEventListener("click", () => openDetails(record.id));
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "row-btn text-danger";
+      del.textContent = "Delete";
+      del.setAttribute(
+        "aria-label",
+        "Delete " + val(record.sample_id)
+      );
+      del.addEventListener("click", () => openDelete(record));
+
+      group.append(view, del);
+      actions.append(group);
+      tr.append(actions);
+      table.append(tr);
+    }
+
+    const start = total === 0 ? 0 : page * PAGE_SIZE + 1;
+    const end = page * PAGE_SIZE + records.length;
+
+    $("recordsRange").textContent =
+      "Showing " + start + "–" + end + " of " + total;
+
+    $("pageLabel").textContent = "Page " + (page + 1);
+    $("prevBtn").disabled = busy || page === 0;
+    $("nextBtn").disabled = busy || end >= total;
+  }
+
+  async function load() {
+    const seq = ++requestSeq;
+
+    busy = true;
+    $("refreshBtn").disabled = true;
+    showStatus("Loading inspection records…");
+
+    try {
+      const response = await fetch(
+        "/api/inspections?" + params(),
+        { cache: "no-store" }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || "HTTP " + response.status);
+      }
+
+      if (seq !== requestSeq) return;
+
+      if (!Array.isArray(data.records)) {
+        throw new Error("Invalid API response");
+      }
+
+      records = data.records;
+      total = Number(data.total || 0);
+
+      if (page > 0 && records.length === 0) {
+        page = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+        busy = false;
+        return load();
+      }
+
+      showStatus(
+        total + " matching record" +
+        (total === 1 ? "" : "s") + " found.",
+        "success"
+      );
+
+      render();
+
+    } catch (e) {
+      if (seq !== requestSeq) return;
+
+      records = [];
+      total = 0;
+      render();
+
+      showStatus("Unable to load: " + e.message, "error");
+      window.bambooxToast?.(e.message, "error");
+
+    } finally {
+      if (seq === requestSeq) {
+        busy = false;
+        $("refreshBtn").disabled = false;
+        $("prevBtn").disabled = page === 0;
+        $("nextBtn").disabled =
+          (page + 1) * PAGE_SIZE >= total;
+      }
+    }
+  }
+
+  async function loadSpecies() {
+    try {
+      const response = await fetch(
+        "/api/inspections/species",
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const selected = $("speciesFilter").value;
+
+      $("speciesFilter").replaceChildren(
+        new Option("All species", "")
+      );
+
+      (data.species || []).forEach(name => {
+        $("speciesFilter").add(new Option(name, name));
+      });
+
+      $("speciesFilter").value = selected;
+    } catch (_) {
+      // Table and search still work if this request fails.
+    }
+  }
+
+  function addDetail(name, value) {
+    const dt = document.createElement("dt");
+    dt.textContent = name;
+
+    const dd = document.createElement("dd");
+    dd.textContent = val(value);
+
+    $("detailsGrid").append(dt, dd);
+  }
+
+  async function openDetails(id) {
+    try {
+      const response = await fetch(
+        "/api/inspections/" + id,
+        { cache: "no-store" }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Unable to load details");
+      }
+
+      activeDetails = data;
+      $("detailsTitle").textContent =
+        "Sample " + val(data.sample_id);
+
+      $("detailsGrid").replaceChildren();
+
+      [
+        ["Record ID", data.id],
+        ["Sample ID", data.sample_id],
+        ["AI species", data.predicted_species],
+        ["Confidence", pct(data.confidence_score)],
+        [
+          "Inference",
+          data.inference_time_ms == null
+            ? "—"
+            : data.inference_time_ms + " ms"
+        ],
+        ["Known species", data.species],
+        ["Origin", data.origin],
+        ["Original filename", data.filename],
+        ["Model", data.model_name],
+        ["Classification", data.classification_type],
+        ["Saved (UTC)", data.inspection_date]
+      ].forEach(([name, value]) => addDetail(name, value));
+
+      $("detailNotes").textContent = val(data.notes);
+
+      const img = $("detailImage");
+      img.hidden = true;
+      img.removeAttribute("src");
+      $("missingDetailImage").hidden = false;
+
+      if (data.image_saved && data.image_url) {
+        img.onload = () => {
+          img.hidden = false;
+          $("missingDetailImage").hidden = true;
+        };
+
+        img.onerror = () => {
+          img.hidden = true;
+          $("missingDetailImage").hidden = false;
+        };
+
+        img.src = data.image_url;
+      }
+
+      $("detailsDialog").showModal();
+
+    } catch (e) {
+      window.bambooxToast?.(e.message, "error");
+    }
+  }
+
+  function showReport(record) {
+    const setText = (id, value) => {
+      $(id).textContent = val(value);
+    };
+
+    setText("reportReference", "BX-RPT-" + record.id);
+    setText("reportSample", record.sample_id);
+    setText("reportId", record.id);
+
+    setText(
+      "reportDate",
+      record.inspection_date
+        ? record.inspection_date + " UTC"
+        : null
+    );
+
+    setText("reportOrigin", record.origin);
+    setText("reportProvidedSpecies", record.species);
+    setText("reportFilename", record.filename);
+
+    setText(
+      "reportInference",
+      record.inference_time_ms == null
+        ? null
+        : record.inference_time_ms + " ms"
+    );
+
+    setText("reportPrediction", record.predicted_species);
+    setText("reportModel", record.model_name);
+    setText("reportNotes", record.notes);
+
+    $("reportGenerated").textContent =
+      "Generated (local): " + new Date().toLocaleString();
+
+    const confidence = Number(record.confidence_score);
+
+    const hasScore =
+      record.confidence_score !== null &&
+      record.confidence_score !== undefined &&
+      Number.isFinite(confidence);
+
+    const score = hasScore
+      ? Math.min(100, Math.max(0, confidence))
+      : 0;
+
+    const level = !hasScore
+      ? ""
+      : score < 70
+        ? "low"
+        : score < 85
+          ? "medium"
+          : "";
+
+    $("reportConfidence").textContent =
+      hasScore ? confidence.toFixed(2) + "%" : "—";
+
+    $("reportConfidence").className =
+      "report-confidence " + level;
+
+    $("reportMeterFill").className = level;
+    $("reportMeterFill").style.width = score + "%";
+
+    $("reportMeter").setAttribute(
+      "aria-valuenow",
+      String(score)
+    );
+
+    $("reportWarning").hidden =
+      !(hasScore && confidence < 70);
+
+    const img = $("reportImage");
+    const fallback = $("reportImageMissing");
+    const printButton = $("printReportBtn");
+
+    img.hidden = true;
+    img.removeAttribute("src");
+
+    fallback.hidden = false;
+    fallback.textContent = "Photo unavailable";
+    printButton.disabled = false;
+
+    if (record.image_saved && record.image_url) {
+      printButton.disabled = true;
+      fallback.textContent = "Loading image…";
+
+      img.onload = () => {
+        img.hidden = false;
+        fallback.hidden = true;
+        printButton.disabled = false;
+      };
+
+      img.onerror = () => {
+        img.hidden = true;
+        fallback.hidden = false;
+        fallback.textContent =
+          "Stored photo could not be loaded";
+        printButton.disabled = false;
+      };
+
+      img.src = record.image_url;
+    }
+
+    $("detailsDialog").close();
+    $("recordsWorkspace").hidden = true;
+    $("reportPreview").hidden = false;
+
+    window.scrollTo(0, 0);
+    $("backToRecords").focus();
+  }
+
+  function closeReport() {
+    $("reportPreview").hidden = true;
+    $("recordsWorkspace").hidden = false;
+    $("printReportBtn").disabled = true;
+
+    const img = $("reportImage");
+    img.hidden = true;
+    img.removeAttribute("src");
+
+    window.scrollTo(0, 0);
+    $("refreshBtn").focus();
+  }
+
+  $("openReportBtn").addEventListener("click", () => {
+    if (activeDetails) {
+      showReport(activeDetails);
+    }
+  });
+
+  $("backToRecords").addEventListener("click", closeReport);
+
+  $("printReportBtn").addEventListener("click", () => {
+    window.print();
+  });
+
+  document.addEventListener("keydown", event => {
+    if (
+      event.key === "Escape" &&
+      !$("reportPreview").hidden
+    ) {
+      closeReport();
+    }
+  });
+
+  function openDelete(record) {
+    pendingDeleteId = record.id;
+
+    $("deleteDescription").textContent =
+      "Delete " + val(record.sample_id) +
+      " (record #" + record.id + ") and its locally stored photo?";
+
+    $("deleteDialog").showModal();
+  }
+
+  function closeDelete() {
+    if (!$("confirmDelete").disabled) {
+      $("deleteDialog").close();
+      pendingDeleteId = null;
+    }
+  }
+
+  $("closeDetails").addEventListener(
+    "click",
+    () => $("detailsDialog").close()
+  );
+
+  $("closeDetailsBottom").addEventListener(
+    "click",
+    () => $("detailsDialog").close()
+  );
+
+  $("closeDelete").addEventListener("click", closeDelete);
+  $("cancelDelete").addEventListener("click", closeDelete);
+
+  $("deleteDialog").addEventListener("close", () => {
+    pendingDeleteId = null;
+  });
+
+  $("confirmDelete").addEventListener("click", async () => {
+    if (pendingDeleteId == null) return;
+
+    const id = pendingDeleteId;
+    $("confirmDelete").disabled = true;
+    $("confirmDelete").classList.add("is-loading");
+
+    try {
+      const res = await fetch(
+        "/api/inspections/" + id,
+        { method: "DELETE" }
+      );
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Delete failed");
+      }
+
+      $("deleteDialog").close();
+      window.bambooxToast?.("Inspection record deleted.");
+
+      await Promise.all([load(), loadSpecies()]);
+
+    } catch (e) {
+      window.bambooxToast?.(e.message, "error");
+
+    } finally {
+      $("confirmDelete").disabled = false;
+      $("confirmDelete").classList.remove("is-loading");
+    }
+  });
+
+  $("searchInput").addEventListener("input", () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      page = 0;
+      load();
+    }, 300);
+  });
+
+  $("speciesFilter").addEventListener("change", () => {
+    page = 0;
+    load();
+  });
+
+  $("sortSelect").addEventListener("change", () => {
+    page = 0;
+    load();
+  });
+
+  $("refreshBtn").addEventListener("click", () => {
+    loadSpecies();
+    load();
+  });
+
+  $("prevBtn").addEventListener("click", () => {
+    if (!busy && page > 0) {
+      page--;
+      load();
+    }
+  });
+
+  $("nextBtn").addEventListener("click", () => {
+    if (!busy && (page + 1) * PAGE_SIZE < total) {
+      page++;
+      load();
+    }
+  });
+
+  $("exportBtn").addEventListener("click", () => {
+    window.location.href =
+      "/api/inspections/export.csv?" + params(false);
+
+    window.bambooxToast?.(
+      "Exporting filtered inspection records."
+    );
+  });
+
+  loadSpecies();
+  load();
+})();
+</script>
+{% endblock %}
