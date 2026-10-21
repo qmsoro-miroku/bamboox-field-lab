@@ -72,7 +72,9 @@
     const status=kind==='species'?'Loading species model for this browser…':'Loading growth model for this browser…';
     const message=document.querySelector('#browserAIStatus');if(message)message.textContent=status;
     try {
-      return await ort.InferenceSession.create(base+`/models/${kind}.onnx`,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+      const engine=await ort.InferenceSession.create(base+`/models/${kind}.onnx`,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+      if(message)message.textContent='Browser AI ready. Photos are processed on your device; your journal stays in this browser.';
+      return engine;
     }catch(error){console.error('Browser ONNX initialization failed:',error);throw fail('The AI model could not load. Check your connection and use a current Chrome, Edge, Firefox, or Safari browser.',503);}
   }
   function serialInference(fn){const job=inferenceQueue.then(fn,fn);inferenceQueue=job.catch(()=>{});return job;}
