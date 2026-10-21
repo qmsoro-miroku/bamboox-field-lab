@@ -12,7 +12,8 @@ The public website runs both trained models inside the visitor's browser using O
 - Image Scanner with sample ID, origin/location, inspector notes, and separate species/growth tabs.
 - MobileNetV3-Small classification for nine BambooBD species.
 - YOLOv8n bounding boxes for **Matured**, **Old**, and **Young** objects.
-- Webcam preview, frame capture, species analysis, growth detection, and local clip downloads.
+- Automatic Live YOLO growth boxes, explicit start/stop, captured-frame scans, species analysis, and local clip downloads.
+- Clearly labeled public validation sample to test the detector without granting webcam access.
 - Private browser Field Journal with saved photos, filtering, deletion, CSV export, and printable reports.
 - Growth dataset viewer with **7,050 images** and **12,177 annotations**, split/class filters, and CSV export.
 - Dashboard and Settings that describe the public browser runtime accurately.
@@ -69,7 +70,11 @@ GitHub Pages publishes `main` → `/docs`. Do not add `.venv`, database files, p
 
 ## Model and dataset notes
 
-The deployed ONNX graphs were exported from the original trained checkpoints. Numerical output parity was checked against PyTorch. Browser resizing and inference hardware may cause small differences in final scores compared with the original Python pipeline. Historical model benchmarks are not a new evaluation of the browser deployment.
+The deployed ONNX graphs were exported from the original trained checkpoints. Numerical output parity was checked against PyTorch. The growth graph supports dynamic rectangular inputs. Browser preprocessing matches the original Ultralytics single-image resize and stride-32 letterbox instead of always padding to a 640-square image. Canvas resizing and inference hardware can still cause score differences. The confidence threshold remains 25% with class-aware NMS at IoU 0.7. Historical model benchmarks are not a new evaluation of the browser deployment. Re-filming a phone screen can add blur, glare, and unrelated background; upload the original image for a reproducible comparison. No detections does not prove bamboo is absent.
+
+Live mode scans one new frame after each completed inference; it does not build a queue. It pauses on capture, clip recording, camera stop, and hidden tabs. Its speed depends on the device. Dataset-sample mode is explicitly labeled and uses a public validation photo; it is a functionality check, not independent accuracy evidence.
+
+Re-export growth after replacing its weights with `python scripts/export_growth_onnx.py` in an environment with PyTorch, Ultralytics, ONNX, and ONNX Runtime. The export checks six rectangular/square input shapes against PyTorch. Run controller regressions with `node --test tests/camera_growth.test.cjs`.
 
 Growth dataset source: [Bamboo Detection and Classification v6](https://universe.roboflow.com/bamboo-6gkce/bamboo-detection-and-classification/dataset/6), licensed **CC BY 4.0** according to its source metadata. The public copy uses the team's cleaned splits and retains the original annotations. See [ATTRIBUTION.md](ATTRIBUTION.md).
 

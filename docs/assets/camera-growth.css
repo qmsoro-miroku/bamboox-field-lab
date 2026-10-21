@@ -1,0 +1,9 @@
+.fl-growth-camera { margin: 14px 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.fl-growth-camera .fl-kicker { color: var(--fl-accent); font-size: 11px; }
+.fl-growth-camera .fl-camera-controls { margin: 12px 0; }
+.fl-growth-camera p { margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.fl-growth-camera #growthCameraStatus { color: var(--text); font-weight: 650; }
+.fl-growth-camera #growthCameraStatus[data-kind="error"] { color: var(--danger, #d86464); }
+.fl-growth-camera #growthCameraReport { color: var(--fl-accent); }
+#growthCameraOverlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; display: none; }
+@media (max-width: 540px) { .fl-growth-camera .fl-camera-controls button { flex: 1 1 135px; } }

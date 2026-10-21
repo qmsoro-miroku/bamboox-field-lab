@@ -31,9 +31,11 @@
 
   <script>window.BAMBOOX_BASE="/bamboox-field-lab";</script>
 <script src="/bamboox-field-lab/assets/ort/ort.wasm.min.js"></script>
-<script src="/bamboox-field-lab/assets/web-api.js"></script>
+<script src="/bamboox-field-lab/assets/web-api.js?v=20261021c"></script>
 <script defer src="/bamboox-field-lab/assets/shell.js"></script>
   
+<link rel="stylesheet" href="/bamboox-field-lab/assets/camera-growth.css?v=20261021c">
+
 <link rel="icon" type="image/svg+xml" href="/bamboox-field-lab/assets/favicon.svg">
 </head>
 
@@ -244,7 +246,7 @@
 
             <p class="page-subtitle">
               
-Capture a field photo, analyze bamboo species, and save it locally.
+Run live YOLO growth detection, or capture a photo for species recognition and your journal.
 
             </p>
           </div>
@@ -270,9 +272,8 @@ Capture a field photo, analyze bamboo species, and save it locally.
     <h2>Observe. Capture. Analyze.</h2>
 
     <p>
-      Capture bamboo images using your webcam.
-      Analyze captured frames with MobileNetV3-Small species
-      recognition or YOLOv8n growth-stage object detection.
+      Start Live YOLO for automatic Young / Matured / Old boxes.
+      Capture a still frame when you want to analyze species and save a sample with its origin.
     </p>
 
     <span class="fl-phase-tag">
@@ -343,6 +344,10 @@ Capture a field photo, analyze bamboo species, and save it locally.
           Stop Camera
         </button>
 
+        <button type="button" id="sampleCamera" class="secondary">
+          Try Dataset Sample
+        </button>
+
         <button type="button"
                 id="captureFrame"
                 class="btn"
@@ -365,6 +370,19 @@ Capture a field photo, analyze bamboo species, and save it locally.
         </button>
 
       </div>
+
+      <section class="fl-growth-camera" aria-label="YOLO growth detector">
+        <span class="fl-kicker">YOLOv8n / GROWTH DETECTION</span>
+        <div class="fl-camera-controls">
+          <button type="button" class="btn" id="startLiveGrowth" disabled>Start Live YOLO</button>
+          <button type="button" class="secondary" id="stopLiveGrowth" disabled>Stop Live YOLO</button>
+          <button type="button" class="secondary" id="detectCapturedGrowth" disabled>Detect Captured Frame</button>
+        </div>
+        <p id="growthCameraStatus" role="status" aria-live="polite">Start Camera, then Start Live YOLO for automatic boxes.</p>
+        <p id="growthCameraReport" hidden></p>
+        <p id="growthCameraHint">Keep the bamboo stem close, sharp, and well lit. If testing a photo, upload the original in Image Scanner; filming a phone screen adds blur and glare. No box means no detection above 25% confidence.</p>
+        <p>Live speed depends on your device. Capturing a frame or recording a clip pauses live detection. Try Dataset Sample uses a public validation photo, not your webcam.</p>
+      </section>
 
       <p class="fl-camera-notice">
         Both AI modes are available: species recognition and
@@ -399,17 +417,17 @@ Capture a field photo, analyze bamboo species, and save it locally.
       <div class="fl-camera-step">
         <span>02</span>
         <div>
-          <strong>Capture frame</strong>
-          <p>Photograph the bamboo sample.</p>
+          <strong>Start Live YOLO</strong>
+          <p>Scan new camera frames automatically for growth-stage boxes.</p>
         </div>
       </div>
 
       <div class="fl-camera-step">
         <span>03</span>
         <div>
-          <strong>Analyze species</strong>
+          <strong>Capture &amp; analyze species</strong>
           <p>
-            Validate image and run MobileNetV3-Small in this browser.
+            Capture Frame pauses live detection. Validate the still photo and run MobileNetV3-Small in this browser.
           </p>
         </div>
       </div>
@@ -520,7 +538,7 @@ Capture a field photo, analyze bamboo species, and save it locally.
     </div>
 
     <p class="fl-camera-notice">
-      Use <strong>Detect Growth Stage</strong> on a captured frame
+      Use <strong>Detect Captured Frame</strong> beside the camera preview
       to preview Young / Matured / Old detections.
       Growth detections remain separate from saved species inspections.
     </p>
@@ -561,6 +579,7 @@ Capture a field photo, analyze bamboo species, and save it locally.
 
   let recorder = null;
   let clipChunks = [];
+  let sampleTimer = null;
 
   function notify(message, kind = "") {
     $("cameraStatus").textContent = message;
@@ -577,6 +596,7 @@ Capture a field photo, analyze bamboo species, and save it locally.
       !!recorder && recorder.state === "recording";
 
     $("startCamera").disabled = cameraOn || busy;
+    $("sampleCamera").disabled = cameraOn || busy;
 
     $("stopCamera").disabled =
       !cameraOn || busy || recording;
@@ -594,6 +614,10 @@ Capture a field photo, analyze bamboo species, and save it locally.
 
     $("saveFrame").disabled =
       !prediction || busy || saved;
+
+    document.dispatchEvent(new CustomEvent("bamboox:camera-state", {
+      detail: {active: cameraOn, busy, recording}
+    }));
   }
 
   function clearPreviousCapture() {
@@ -732,9 +756,10 @@ Capture a field photo, analyze bamboo species, and save it locally.
 
       placeholder.hidden = true;
       video.hidden = false;
+      document.querySelector(".fl-camera-watermark").textContent = "BAMBOOX / LIVE CAMERA";
 
       notify(
-        "Live camera ready. Capture a bamboo frame.",
+        "Camera ready. Choose Start Live YOLO for automatic growth boxes, or Capture Frame for a still photo.",
         "success"
       );
 
@@ -757,7 +782,41 @@ Capture a field photo, analyze bamboo species, and save it locally.
   // STOP CAMERA
   // =====================================================
 
+  $("sampleCamera").addEventListener("click", async () => {
+    busy = true;
+    refresh();
+    notify("Loading the public validation sample...");
+    try {
+      const image = new Image();
+      image.src = (window.BAMBOOX_BASE || "") + "/assets/growth-demo.jpg";
+      await image.decode();
+      const sampleCanvas = document.createElement("canvas");
+      sampleCanvas.width = image.naturalWidth;
+      sampleCanvas.height = image.naturalHeight;
+      const draw = () => sampleCanvas.getContext("2d").drawImage(image, 0, 0);
+      draw();
+      stream = sampleCanvas.captureStream(10);
+      sampleTimer = setInterval(draw, 200);
+      video.srcObject = stream;
+      await video.play();
+      clearPreviousCapture();
+      placeholder.hidden = true;
+      video.hidden = false;
+      document.querySelector(".fl-camera-watermark").textContent = "BAMBOOX / DATASET SAMPLE — NOT WEBCAM";
+      notify("Dataset sample ready. Choose Start Live YOLO to test automatic boxes. Stop Camera ends the demo.");
+    } catch (error) {
+      clearInterval(sampleTimer);
+      stream?.getTracks().forEach(track => track.stop());
+      stream = null;
+      notify("Sample preview unavailable: " + error.message + ". Upload a photo in Image Scanner instead.", "error");
+    } finally {
+      busy = false;
+      refresh();
+    }
+  });
+
   $("stopCamera").addEventListener("click", () => {
+    clearInterval(sampleTimer);
     stream?.getTracks().forEach(track => track.stop());
 
     stream = null;
@@ -831,7 +890,7 @@ Capture a field photo, analyze bamboo species, and save it locally.
       video.hidden = true;
 
       notify(
-        "Frame captured. Click Validate & Predict Species.",
+        "Frame captured. Choose Detect Captured Frame for growth boxes, or Validate & Predict Species below.",
         "success"
       );
 
@@ -1067,6 +1126,7 @@ Capture a field photo, analyze bamboo species, and save it locally.
   // =====================================================
 
   window.addEventListener("pagehide", () => {
+    clearInterval(sampleTimer);
     stream?.getTracks().forEach(track => track.stop());
 
     if (imageURL) {
@@ -1082,269 +1142,23 @@ Capture a field photo, analyze bamboo species, and save it locally.
     }
   });
 
+  // Resume the existing stream without discarding captured sample metadata.
+  document.addEventListener("bamboox:camera-live", () => {
+    if (!stream || busy || recorder?.state === "recording") return;
+    preview.hidden = true;
+    placeholder.hidden = true;
+    video.hidden = false;
+    notify("Live preview active. Capture Frame freezes a photo for species analysis.");
+    refresh();
+  });
+
   suggestId();
   refresh();
 
 })();
 </script>
 
-<script>
-/*
- * BambooX 3.0 — Camera Growth-Stage Overlay
- * Uses the existing /api/detect-growth-stage endpoint.
- * Does not change species predictions or saved records.
- */
-(() => {
-  const photo = document.getElementById("capturePreview");
-  const stage = document.getElementById("cameraStage");
-  const actions = document.querySelector(".fl-camera-actions");
-  const form = document.querySelector(".fl-camera-form");
-
-  if (!photo || !stage || !actions || !form) {
-    console.error("BambooX camera elements not found.");
-    return;
-  }
-
-  // New growth-stage detection button
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "btn";
-  button.textContent = "Detect Growth Stage";
-  button.disabled = true;
-  actions.appendChild(button);
-
-  // Overlay drawn over the captured image
-  const NS = "http://www.w3.org/2000/svg";
-  const overlay = document.createElementNS(NS, "svg");
-
-  overlay.setAttribute("aria-hidden", "true");
-  overlay.setAttribute(
-    "preserveAspectRatio",
-    "xMidYMid meet"
-  );
-
-  Object.assign(overlay.style, {
-    position: "absolute",
-    inset: "0",
-    width: "100%",
-    height: "100%",
-    zIndex: "2",
-    pointerEvents: "none",
-    display: "none"
-  });
-
-  stage.appendChild(overlay);
-
-  // Separate result panel — never confused with species AI
-  const report = document.createElement("div");
-  report.className = "fl-camera-result";
-  report.hidden = true;
-  report.style.whiteSpace = "pre-line";
-  report.style.lineHeight = "1.8";
-  form.appendChild(report);
-
-  const colors = {
-    matured: "#7EE4A0",
-    old: "#FFBD70",
-    young: "#85C8FF"
-  };
-
-  function svgElement(tag, attributes) {
-    const element = document.createElementNS(NS, tag);
-
-    for (const [name, value] of Object.entries(attributes)) {
-      element.setAttribute(name, String(value));
-    }
-
-    return element;
-  }
-
-  function hasPhoto() {
-    return (
-      !photo.hidden &&
-      !!photo.getAttribute("src") &&
-      photo.naturalWidth > 0
-    );
-  }
-
-  function clearGrowthResults() {
-    overlay.replaceChildren();
-    overlay.style.display = "none";
-    report.hidden = true;
-    button.disabled = !hasPhoto();
-  }
-
-  function drawDetections(data) {
-    overlay.replaceChildren();
-
-    overlay.setAttribute(
-      "viewBox",
-      `0 0 ${data.image_width} ${data.image_height}`
-    );
-
-    for (const detection of data.detections) {
-      const box = detection.bbox;
-      const color = colors[detection.class_name] || "#FFFFFF";
-
-      const x = Math.max(0, box.x1);
-      const y = Math.max(0, box.y1);
-      const width = Math.max(0, box.x2 - box.x1);
-      const height = Math.max(0, box.y2 - box.y1);
-
-      const rectangle = svgElement("rect", {
-        x,
-        y,
-        width,
-        height,
-        fill: "none",
-        stroke: color,
-        "stroke-width": 4
-      });
-
-      overlay.appendChild(rectangle);
-
-      const label =
-        `${detection.class_name.toUpperCase()} ` +
-        `${detection.confidence_percent}%`;
-
-      const labelWidth = label.length * 12 + 18;
-      const labelX = Math.max(
-        0,
-        Math.min(x, data.image_width - labelWidth)
-      );
-      const labelY = Math.max(0, Math.min(y, data.image_height - 32));
-
-      const background = svgElement("rect", {
-        x: labelX,
-        y: labelY,
-        width: labelWidth,
-        height: 30,
-        rx: 3,
-        fill: color
-      });
-
-      const text = svgElement("text", {
-        x: labelX + 8,
-        y: labelY + 22,
-        fill: "#10251F",
-        "font-size": 21,
-        "font-weight": "bold"
-      });
-
-      text.textContent = label;
-
-      overlay.appendChild(background);
-      overlay.appendChild(text);
-    }
-
-    overlay.style.display = "block";
-  }
-
-  function showResults(data) {
-    const lines = [
-      "GROWTH-STAGE DETECTION — YOLOv8n",
-      "",
-      `Detected objects: ${data.detection_count}`,
-      `Matured: ${data.class_counts.matured}`,
-      `Old: ${data.class_counts.old}`,
-      `Young: ${data.class_counts.young}`,
-      `Inference: ${data.inference_time_ms} ms`,
-      "",
-      "Dataset-defined growth-stage categories.",
-      "Not a biological-age or structural-safety certification.",
-      "",
-      "These results are not yet saved to the Field Journal."
-    ];
-
-    report.textContent = lines.join("\n");
-    report.hidden = false;
-  }
-
-  button.addEventListener("click", async () => {
-    if (!hasPhoto()) return;
-
-    const originalSrc = photo.src;
-
-    button.disabled = true;
-    button.textContent = "Detecting...";
-
-    try {
-      // Read the already-captured camera frame.
-      const imageResponse = await fetch(originalSrc);
-
-      if (!imageResponse.ok) {
-        throw new Error("Cannot read captured frame.");
-      }
-
-      const imageBlob = await imageResponse.blob();
-
-      const payload = new FormData();
-
-      payload.append(
-        "file",
-        imageBlob,
-        "bamboox_camera_capture.jpg"
-      );
-
-      const response = await fetch(
-        "/api/detect-growth-stage",
-        {
-          method: "POST",
-          body: payload
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data.detail === "string"
-            ? data.detail
-            : `Detection failed: HTTP ${response.status}`
-        );
-      }
-
-      // Ignore results if the user captured a newer image.
-      if (photo.hidden || photo.src !== originalSrc) {
-        return;
-      }
-
-      drawDetections(data);
-      showResults(data);
-
-      window.bambooxToast?.(
-        `Growth-stage detection complete: ` +
-        `${data.detection_count} objects`
-      );
-
-    } catch (error) {
-      overlay.style.display = "none";
-      report.textContent =
-        "Growth-stage detection failed: " + error.message;
-      report.hidden = false;
-
-      window.bambooxToast?.(
-        error.message,
-        "error"
-      );
-
-    } finally {
-      button.textContent = "Detect Growth Stage";
-      button.disabled = !hasPhoto();
-    }
-  });
-
-  // Clear old boxes when capturing a different frame.
-  new MutationObserver(clearGrowthResults).observe(photo, {
-    attributes: true,
-    attributeFilter: ["src", "hidden"]
-  });
-
-  photo.addEventListener("load", () => {
-    button.disabled = !hasPhoto();
-  });
-})();
-</script>
+<script defer src="/bamboox-field-lab/assets/camera-growth.js?v=20261021c"></script>
 
 
 </body>

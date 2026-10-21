@@ -17,3 +17,12 @@
 - Original development project, inspection database, uploads, and trained checkpoints were kept unchanged.
 
 These checks verify the deployment and application behavior; they do not establish new model accuracy or biological ground truth.
+
+## Camera and rectangular preprocessing correction
+
+- The original camera detected a captured still only. Live mode now repeatedly scans new frames with one inference request in flight, explicit start/stop, and view/generation checks that reject late results.
+- Controller regression tests cover serial scheduling, blank-frame box removal, stopping during inference, capture changes, capture scans without a running camera, recording, hidden tabs, and camera shutdown. These tests use DOM/API fixtures; model parity tests use the trained weights.
+- Five validation photos were compared with the original checkpoint. With the previous fixed square browser input, one photo returned zero objects while the native rectangular pipeline detected Old at 43.96%. Dynamic rectangular ONNX inference recovers its 43.96% raw score without changing the 25% confidence threshold.
+- Export numerical parity was checked on five tensor shapes during this correction. The reproducible export script additionally covers the landscape 320×640 shape.
+- A crop of the user-supplied screen capture returned no detections in both native YOLO (rectangular and square) and the previous ONNX export. Its strongest square-input score was approximately 0.8%. Screenshot pixels are not the original captured image; this is diagnostic evidence, not a ground-truth evaluation.
+- Model weights and class mappings are unchanged. These corrections do not establish new model accuracy on field photographs or re-filmed screens.

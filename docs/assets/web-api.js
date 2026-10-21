@@ -7,7 +7,7 @@
   const json = (data, status = 200) => new Response(JSON.stringify(data), {status,headers:{'Content-Type':'application/json'}});
   const fail = (message, status=400) => Object.assign(new Error(message), {status});
   const round = (n, d=2) => Number(n.toFixed(d));
-  const meta = nativeFetch(base+'/models/metadata.json').then(r=>{if(!r.ok)throw fail('Model information is unavailable.',503);return r.json();});
+  const meta = nativeFetch(base+'/models/metadata.json?v=rect32-v1').then(r=>{if(!r.ok)throw fail('Model information is unavailable.',503);return r.json();});
   let datasetPromise, dbPromise, speciesSession, growthSession, inferenceQueue=Promise.resolve();
   const urls = new Map();
   const dataset = () => datasetPromise ||= nativeFetch(base+'/data/dataset.json').then(r=>r.json());
@@ -52,27 +52,33 @@
     return {bitmap,format,width:bitmap.width,height:bitmap.height};
   }
   function tensorFor(bitmap,size,letterbox) {
-    const canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+    const canvas=document.createElement('canvas');
+    let width=size,height=size,ratio=1,padX=0,padY=0,w=size,h=size;
+    if(letterbox){
+      // Match Ultralytics single-image rect=True: resize to 640, pad to stride 32.
+      // A fixed 640-square input changes detections on tall/wide bamboo images.
+      ratio=Math.min(size/bitmap.width,size/bitmap.height);
+      w=Math.round(bitmap.width*ratio);h=Math.round(bitmap.height*ratio);
+      width=w+(size-w)%32;height=h+(size-h)%32;
+      padX=Math.round((width-w)/2-.1);padY=Math.round((height-h)/2-.1);
+    }
+    canvas.width=width;canvas.height=height;
     const ctx=canvas.getContext('2d',{willReadFrequently:true});
     ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality=letterbox?'low':'high';
-    let ratio=1, padX=0,padY=0;
     if(letterbox){
-      ratio=Math.min(size/bitmap.width,size/bitmap.height);
-      const w=Math.round(bitmap.width*ratio),h=Math.round(bitmap.height*ratio);
-      padX=Math.round((size-w)/2-.1);padY=Math.round((size-h)/2-.1);
-      ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,size,size);ctx.drawImage(bitmap,padX,padY,w,h);
+      ctx.fillStyle='rgb(114,114,114)';ctx.fillRect(0,0,width,height);ctx.drawImage(bitmap,padX,padY,w,h);
     }else ctx.drawImage(bitmap,0,0,size,size);
-    const rgba=ctx.getImageData(0,0,size,size).data, area=size*size, data=new Float32Array(3*area);
+    const rgba=ctx.getImageData(0,0,width,height).data, area=width*height, data=new Float32Array(3*area);
     const means=[.485,.456,.406],std=[.229,.224,.225];
     for(let p=0;p<area;p++)for(let c=0;c<3;c++)data[c*area+p]=letterbox?rgba[p*4+c]/255:(rgba[p*4+c]/255-means[c])/std[c];
-    return {tensor:new ort.Tensor('float32',data,[1,3,size,size]),ratio,padX,padY};
+    return {tensor:new ort.Tensor('float32',data,[1,3,height,width]),ratio,padX,padY};
   }
   async function session(kind) {
     ort.env.wasm.wasmPaths=base+'/assets/ort/';ort.env.wasm.numThreads=1;ort.env.wasm.proxy=false;
     const status=kind==='species'?'Loading species model for this browser…':'Loading growth model for this browser…';
     const message=document.querySelector('#browserAIStatus');if(message)message.textContent=status;
     try {
-      const engine=await ort.InferenceSession.create(base+`/models/${kind}.onnx`,{executionProviders:['wasm'],graphOptimizationLevel:'all'});
+      const engine=await ort.InferenceSession.create(base+`/models/${kind}.onnx`+(kind==='growth'?'?v=rect32-v1':''),{executionProviders:['wasm'],graphOptimizationLevel:'all'});
       if(message)message.textContent='Browser AI ready. Photos are processed on your device; your journal stays in this browser.';
       return engine;
     }catch(error){console.error('Browser ONNX initialization failed:',error);throw fail('The AI model could not load. Check your connection and use a current Chrome, Edge, Firefox, or Safari browser.',503);}

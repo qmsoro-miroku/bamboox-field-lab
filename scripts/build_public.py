@@ -92,7 +92,7 @@ def build():
         html=environment.get_template(source).render(active_page=active)
         html=public_words(html)
         html=re.sub(r'(href|src)="(/[^"\s]*)"',public_link,html)
-        runtime=f'<script>window.BAMBOOX_BASE={json.dumps(BASE)};</script>\n<script src="{BASE}/assets/ort/ort.wasm.min.js"></script>\n<script src="{BASE}/assets/web-api.js"></script>\n'
+        runtime=f'<script>window.BAMBOOX_BASE={json.dumps(BASE)};</script>\n<script src="{BASE}/assets/ort/ort.wasm.min.js"></script>\n<script src="{BASE}/assets/web-api.js?v=20261021c"></script>\n'
         html=html.replace('<script defer src=',runtime+'<script defer src=',1)
         html=html.replace('</head>',f'<link rel="icon" type="image/svg+xml" href="{BASE}/assets/favicon.svg">\n</head>')
         if active in ('inspection','camera'):
