@@ -571,9 +571,8 @@ Run live YOLO growth detection, or capture a photo for species recognition and y
     video.srcObject = null;
     video.hidden = true;
 
-    if (!captured) {
-      placeholder.hidden = false;
-    }
+    preview.hidden = !captured;
+    placeholder.hidden = !!captured;
 
     notify(
       "Camera stopped. Captured photo is retained, if any."
