@@ -31,3 +31,11 @@ These checks verify the deployment and application behavior; they do not establi
 - Returning from captured-frame detection to live mode is covered by a regression test after an observer timing issue was found and fixed during public testing.
 
 - The final public version also passed captured-frame detection followed by resuming multiple automatic live frames. The reported screenshot crop returned zero objects in the deployed browser detector as well as native YOLO.
+
+## Image Scanner use recommendations (22 October 2026)
+
+- Suggested uses appear only in Image Scanner after a growth-stage detection; camera and species flows remain unchanged.
+- Four unit tests cover all stages and mixed counts, zero/unknown labels, normalization, stale aggregates, and absence of invented age measurements. The three existing camera controller tests also pass.
+- Browser UI fixtures verified Young/Matured/Old content, mixed stages, three viewport sizes in light/dark themes, species-tab separation, upload replacement, no detections, API errors, and rejection of a late response after a new upload.
+- A separate clean browser ran the real ONNX growth model on a public validation image: one Young object was detected and the Young guidance appeared. This checks the detection-to-recommendation flow, not model accuracy or material suitability.
+- Both local installations render all eight Jinja templates with StrictUndefined. Recommendations are educational stage-based rules, not a second AI model or an exact-age estimate, and are not saved to the journal.

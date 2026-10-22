@@ -33,6 +33,9 @@
 <script src="/bamboox-field-lab/assets/web-api.js?v=20261021c"></script>
 <script defer src="/bamboox-field-lab/assets/shell.js"></script>
   
+<link rel="stylesheet" href="/bamboox-field-lab/assets/bamboo-uses.css?v=20261022a">
+<script src="/bamboox-field-lab/assets/bamboo-uses.js?v=20261022a"></script>
+
 <link rel="icon" type="image/svg+xml" href="/bamboox-field-lab/assets/favicon.svg">
 </head>
 
@@ -430,6 +433,21 @@
 
       <div class="gx-result-list" id="gxDetectionList"></div>
 
+
+<section id="gxRecommendations" class="bu-panel" aria-label="Bamboo use recommendations" hidden>
+  <span class="bu-kicker">SUGGESTED BAMBOO USES</span>
+  <h3>What can this bamboo be used for?</h3>
+  <p class="bu-context" data-use-context></p>
+  <p>Suggested uses follow the predicted growth stage. Confirm the species, recorded culm age and physical condition before choosing a use. Exact age in years is not measured by this scan.</p>
+  <div class="bu-cards" data-use-cards></div>
+  <details class="bu-sources">
+    <summary>How to use these recommendations</summary>
+    <p>These are general material-use ideas, not a harvest approval or a strength assessment. Requirements vary by species and product. Record when each culm emerges to track its actual age.</p>
+    <p>References: <a href="https://www.unido.org/publications/ot/9656607/pdf" target="_blank" rel="noopener noreferrer">UNIDO material selection manual</a>, <a href="https://prosea-bamboos.linnaeus.naturalis.nl/linnaeus_ng/app/views/introduction/topic.php?epi=129&amp;id=2357" target="_blank" rel="noopener noreferrer">PROSEA harvesting guidance</a>, and <a href="https://www.inbar.int/wp-content/uploads/2025/03/BRU_6-1_EN.pdf" target="_blank" rel="noopener noreferrer">INBAR material-use examples</a>. These references do not validate the model's stage predictions.</p>
+  </details>
+</section>
+
+
       <div class="gx-disclaimer">
         Results are dataset-defined growth-stage predictions.
         They do not establish biological age, bamboo quality,
@@ -485,6 +503,7 @@
   }
 
   function resetResults() {
+    window.BambooUses.render($("gxRecommendations"), null);
     overlay.replaceChildren();
     list.replaceChildren();
 
@@ -655,6 +674,7 @@
   }
 
   function displayResults(data) {
+    window.BambooUses.render($("gxRecommendations"), data, "Uploaded image");
     const counts = data.class_counts || {};
 
     $("gxMatured").textContent = counts.matured ?? 0;
@@ -674,7 +694,7 @@
       const message = document.createElement("p");
       message.className = "gx-meta";
       message.textContent =
-        "No objects detected at the model's confidence threshold.";
+        "No objects detected at the model's confidence threshold. A growth-stage detection is needed before suggesting uses.";
       list.appendChild(message);
       return;
     }

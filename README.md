@@ -12,6 +12,7 @@ The public website runs both trained models inside the visitor's browser using O
 - Image Scanner with sample ID, origin/location, inspector notes, and separate species/growth tabs.
 - MobileNetV3-Small classification for nine BambooBD species.
 - YOLOv8n bounding boxes for **Matured**, **Old**, and **Young** objects.
+- Image Scanner suggested uses after growth detection: weaving/crafts, furniture/products, or inspected repurposing, with separate guidance for each detected stage and linked material-selection references.
 - Automatic Live YOLO growth boxes, explicit start/stop, captured-frame scans, species analysis, and local clip downloads.
 - Clearly labeled public validation sample to test the detector without granting webcam access.
 - Private browser Field Journal with saved photos, filtering, deletion, CSV export, and printable reports.
@@ -24,7 +25,7 @@ The first scan downloads its ONNX model and the WebAssembly runtime. Inference s
 
 Uploaded inspection photos are processed on the visitor's device. Saved species inspections use **IndexedDB in that browser**. They are not sent to a shared database, synchronized between devices, or visible to other visitors. Clearing site data removes that browser's journal. Use CSV export and printable reports for records you want to keep.
 
-Growth detections remain preview-only. Predictions are research outputs and do not establish verified botanical identity, biological age, structural safety, or construction suitability.
+Growth detections and their use recommendations remain preview-only. Suggested uses are rule-based educational guidance keyed to the detected stage; they do not measure exact age or approve harvesting or load-bearing use. Predictions are research outputs and do not establish verified botanical identity, biological age, structural safety, or construction suitability.
 
 The hosted application and AI models are downloaded over HTTPS. The public reference dataset is separate from visitors' inspection photos. No existing team inspection database, private uploads, credentials, or local backup folders are included in this repository.
 
@@ -74,7 +75,7 @@ The deployed ONNX graphs were exported from the original trained checkpoints. Nu
 
 Live mode scans one new frame after each completed inference; it does not build a queue. It pauses on capture, clip recording, camera stop, and hidden tabs. Its speed depends on the device. Dataset-sample mode is explicitly labeled and uses a public validation photo; it is a functionality check, not independent accuracy evidence.
 
-Re-export growth after replacing its weights with `python scripts/export_growth_onnx.py` in an environment with PyTorch, Ultralytics, ONNX, and ONNX Runtime. The export checks six rectangular/square input shapes against PyTorch. Run controller regressions with `node --test tests/camera_growth.test.cjs`.
+Re-export growth after replacing its weights with `python scripts/export_growth_onnx.py` in an environment with PyTorch, Ultralytics, ONNX, and ONNX Runtime. The export checks six rectangular/square input shapes against PyTorch. Run controller regressions with `node --test tests/*.test.cjs`.
 
 Growth dataset source: [Bamboo Detection and Classification v6](https://universe.roboflow.com/bamboo-6gkce/bamboo-detection-and-classification/dataset/6), licensed **CC BY 4.0** according to its source metadata. The public copy uses the team's cleaned splits and retains the original annotations. See [ATTRIBUTION.md](ATTRIBUTION.md).
 

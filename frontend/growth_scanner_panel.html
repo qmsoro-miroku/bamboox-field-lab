@@ -86,6 +86,10 @@
 
       <div class="gx-result-list" id="gxDetectionList"></div>
 
+{% with recommendation_id="gxRecommendations" %}
+{% include "bamboo_uses.html" %}
+{% endwith %}
+
       <div class="gx-disclaimer">
         Results are dataset-defined growth-stage predictions.
         They do not establish biological age, bamboo quality,
@@ -141,6 +145,7 @@
   }
 
   function resetResults() {
+    window.BambooUses.render($("gxRecommendations"), null);
     overlay.replaceChildren();
     list.replaceChildren();
 
@@ -311,6 +316,7 @@
   }
 
   function displayResults(data) {
+    window.BambooUses.render($("gxRecommendations"), data, "Uploaded image");
     const counts = data.class_counts || {};
 
     $("gxMatured").textContent = counts.matured ?? 0;
@@ -330,7 +336,7 @@
       const message = document.createElement("p");
       message.className = "gx-meta";
       message.textContent =
-        "No objects detected at the model's confidence threshold.";
+        "No objects detected at the model's confidence threshold. A growth-stage detection is needed before suggesting uses.";
       list.appendChild(message);
       return;
     }

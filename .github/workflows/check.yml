@@ -17,5 +17,5 @@ jobs:
       - run: python scripts/build_public.py
       - run: python scripts/check_public.py
 
-      - name: Camera controller regressions
-        run: node --test tests/camera_growth.test.cjs
+      - name: Growth recommendation and camera controller regressions
+        run: node --test tests/*.test.cjs
